@@ -53,3 +53,302 @@
 2025-12-28 00:12:49,403 - src.agent - INFO - Stored 10 records in database
 2025-12-28 00:12:49,404 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_001249.json and data/exports/bankruptcies_2025_12_20251228_001249.csv
 2025-12-28 00:12:49,405 - src.agent - INFO - Monthly report completed: 10 found, 10 matched
+2025-12-28 00:33:49,812 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:33:49,813 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:33:50,421 - src.agent - INFO - Scraped 6 bankruptcy records
+2025-12-28 00:33:50,422 - src.filter - INFO - Filtered 6 records -> 6 matches
+2025-12-28 00:33:50,422 - src.agent - INFO - Filtered to 6 matching records
+2025-12-28 00:33:50,434 - src.agent - INFO - Stored 6 records in database
+2025-12-28 00:33:50,436 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_003350.json and data/exports/bankruptcies_2025_12_20251228_003350.csv
+2025-12-28 00:33:50,437 - src.agent - INFO - Monthly report completed: 6 found, 6 matched
+2025-12-28 00:35:19,002 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:35:19,003 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:35:19,943 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-28 00:35:24,839 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-28 00:35:24,852 - src.aggregator_scraper - DEBUG - Added: Visvall bilteknik AB from Allabolag.se
+2025-12-28 00:35:24,854 - src.aggregator_scraper - DEBUG - Added: The Brighthouse AB from Allabolag.se
+2025-12-28 00:35:24,856 - src.aggregator_scraper - DEBUG - Added: Söderhamn Sportcenter AB from Allabolag.se
+2025-12-28 00:35:24,859 - src.aggregator_scraper - DEBUG - Added: Storno Logg AB from Allabolag.se
+2025-12-28 00:35:24,861 - src.aggregator_scraper - DEBUG - Added: Som Butik AB from Allabolag.se
+2025-12-28 00:35:24,863 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Projekt AB from Allabolag.se
+2025-12-28 00:35:24,866 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Holding 2 AB from Allabolag.se
+2025-12-28 00:35:24,868 - src.aggregator_scraper - DEBUG - Added: Salamanca in Sweden AB from Allabolag.se
+2025-12-28 00:35:24,870 - src.aggregator_scraper - DEBUG - Added: SOLIRO AB from Allabolag.se
+2025-12-28 00:35:24,873 - src.aggregator_scraper - DEBUG - Added: RUS pizzeria AB from Allabolag.se
+2025-12-28 00:35:25,193 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-28 00:35:30,841 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2025-12-28 00:35:30,856 - src.aggregator_scraper - DEBUG - Added: QVICK's MINIGRÄV Handelsbolag from Konkurslistan.se
+2025-12-28 00:35:30,859 - src.aggregator_scraper - DEBUG - Added: Charkeriet i Huskvarna AB from Konkurslistan.se
+2025-12-28 00:35:30,861 - src.aggregator_scraper - DEBUG - Added: Aphatech AB from Konkurslistan.se
+2025-12-28 00:35:30,864 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Holding 2 AB
+2025-12-28 00:35:30,866 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Projekt AB
+2025-12-28 00:35:30,868 - src.aggregator_scraper - DEBUG - Added: Dan Hall Holding AB from Konkurslistan.se
+2025-12-28 00:35:30,870 - src.aggregator_scraper - DEBUG - Merged: Storno Logg AB
+2025-12-28 00:35:30,872 - src.aggregator_scraper - DEBUG - Added: Af bilar & bilverkstad AB from Konkurslistan.se
+2025-12-28 00:35:30,874 - src.aggregator_scraper - DEBUG - Added: PINTERI AB from Konkurslistan.se
+2025-12-28 00:35:30,876 - src.aggregator_scraper - DEBUG - Added: Gramsi AB from Konkurslistan.se
+2025-12-28 00:35:30,878 - src.aggregator_scraper - DEBUG - Added: Kattvikskajen Schweizeri & Stenugnsbageri AB from Konkurslistan.se
+2025-12-28 00:35:30,880 - src.aggregator_scraper - DEBUG - Added: Attefallspecialisten Sverige AB from Konkurslistan.se
+2025-12-28 00:35:30,882 - src.aggregator_scraper - DEBUG - Added: Cross west transport AB from Konkurslistan.se
+2025-12-28 00:35:30,884 - src.aggregator_scraper - DEBUG - Merged: Som Butik AB
+2025-12-28 00:35:30,886 - src.aggregator_scraper - DEBUG - Merged: SOLIRO AB
+2025-12-28 00:35:30,888 - src.aggregator_scraper - DEBUG - Merged: Salamanca in Sweden AB
+2025-12-28 00:35:30,890 - src.aggregator_scraper - DEBUG - Added: Nordic Worx AB from Konkurslistan.se
+2025-12-28 00:35:30,892 - src.aggregator_scraper - DEBUG - Added: Capital Exchange Markets (CEM) AB from Konkurslistan.se
+2025-12-28 00:35:30,893 - src.aggregator_scraper - DEBUG - Added: BRESHKE BYGG AB from Konkurslistan.se
+2025-12-28 00:35:30,895 - src.aggregator_scraper - DEBUG - Merged: The Brighthouse AB
+2025-12-28 00:35:30,897 - src.aggregator_scraper - DEBUG - Added: Mats Kilander Ekonomi AB from Konkurslistan.se
+2025-12-28 00:35:30,899 - src.aggregator_scraper - DEBUG - Added: Besiktningsportalen Stockholm AB from Konkurslistan.se
+2025-12-28 00:35:30,901 - src.aggregator_scraper - DEBUG - Added: European Quality Transport & Logistics AB from Konkurslistan.se
+2025-12-28 00:35:30,903 - src.aggregator_scraper - DEBUG - Added: Tranarö marin AB from Konkurslistan.se
+2025-12-28 00:35:30,905 - src.aggregator_scraper - DEBUG - Added: COPMOD AB from Konkurslistan.se
+2025-12-28 00:35:30,907 - src.aggregator_scraper - DEBUG - Added: Oriel Stockholm AB from Konkurslistan.se
+2025-12-28 00:35:30,909 - src.aggregator_scraper - DEBUG - Added: Ski The Planet AB from Konkurslistan.se
+2025-12-28 00:35:30,911 - src.aggregator_scraper - DEBUG - Added: Vero Transport AB from Konkurslistan.se
+2025-12-28 00:35:30,913 - src.aggregator_scraper - DEBUG - Added: Mats Lågprishandel AB from Konkurslistan.se
+2025-12-28 00:35:30,915 - src.aggregator_scraper - DEBUG - Added: Harrion AB from Konkurslistan.se
+2025-12-28 00:35:30,916 - src.aggregator_scraper - DEBUG - Added: HSB Bostadsrättsförening Margaretavägen from Konkurslistan.se
+2025-12-28 00:35:30,918 - src.aggregator_scraper - DEBUG - Added: Equality Development Center West Sweden, EDCS EK FÖR from Konkurslistan.se
+2025-12-28 00:35:30,920 - src.aggregator_scraper - DEBUG - Added: Hälsans Hus i Lund, Ekonomisk förening from Konkurslistan.se
+2025-12-28 00:35:30,922 - src.aggregator_scraper - DEBUG - Added: Parapu AB from Konkurslistan.se
+2025-12-28 00:35:30,924 - src.aggregator_scraper - DEBUG - Added: Xertify AB from Konkurslistan.se
+2025-12-28 00:35:30,926 - src.aggregator_scraper - DEBUG - Added: Osterman Fastighet AB from Konkurslistan.se
+2025-12-28 00:35:30,928 - src.aggregator_scraper - DEBUG - Added: Brismo SemiColon AB from Konkurslistan.se
+2025-12-28 00:35:30,930 - src.aggregator_scraper - DEBUG - Added: MeKKon industrisupport Laxå AB from Konkurslistan.se
+2025-12-28 00:35:30,932 - src.aggregator_scraper - DEBUG - Added: Alma Grill AB from Konkurslistan.se
+2025-12-28 00:35:30,934 - src.aggregator_scraper - DEBUG - Added: Goggo Godis AB from Konkurslistan.se
+2025-12-28 00:35:30,936 - src.aggregator_scraper - DEBUG - Added: Zeepay JV AB from Konkurslistan.se
+2025-12-28 00:35:30,937 - src.aggregator_scraper - DEBUG - Added: ZABUX B.T.S AB from Konkurslistan.se
+2025-12-28 00:35:30,939 - src.aggregator_scraper - DEBUG - Added: Ruts Fastighet AB from Konkurslistan.se
+2025-12-28 00:35:30,941 - src.aggregator_scraper - DEBUG - Added: Vanadis Tvätt & rekond AB from Konkurslistan.se
+2025-12-28 00:35:30,943 - src.aggregator_scraper - DEBUG - Added: Gyllenhus AB from Konkurslistan.se
+2025-12-28 00:35:30,945 - src.aggregator_scraper - DEBUG - Added: Thai Town Örnsköldsvik AB from Konkurslistan.se
+2025-12-28 00:35:30,947 - src.aggregator_scraper - DEBUG - Added: GAR Pension AB from Konkurslistan.se
+2025-12-28 00:35:30,948 - src.aggregator_scraper - DEBUG - Added: Springy AB from Konkurslistan.se
+2025-12-28 00:35:30,950 - src.aggregator_scraper - DEBUG - Added: Hair and beauty i Luleå AB from Konkurslistan.se
+2025-12-28 00:35:30,952 - src.aggregator_scraper - DEBUG - Added: Kipuwex AB from Konkurslistan.se
+2025-12-28 00:35:30,954 - src.aggregator_scraper - DEBUG - Added: KD Tech AB from Konkurslistan.se
+2025-12-28 00:35:30,956 - src.aggregator_scraper - DEBUG - Added: GRAB Entreprenad AB from Konkurslistan.se
+2025-12-28 00:35:30,957 - src.aggregator_scraper - DEBUG - Added: N-TRANS AB from Konkurslistan.se
+2025-12-28 00:35:30,959 - src.aggregator_scraper - DEBUG - Added: Klimat & Fastighetsteknik i Trosa AB from Konkurslistan.se
+2025-12-28 00:35:30,961 - src.aggregator_scraper - DEBUG - Added: Aktiebolaget Borlänge Biluthyrning from Konkurslistan.se
+2025-12-28 00:35:30,963 - src.aggregator_scraper - DEBUG - Added: North Wind Aviation AB from Konkurslistan.se
+2025-12-28 00:35:30,965 - src.aggregator_scraper - DEBUG - Added: Solgrann & Company AB from Konkurslistan.se
+2025-12-28 00:35:30,966 - src.aggregator_scraper - DEBUG - Added: AR Dekor AB from Konkurslistan.se
+2025-12-28 00:35:30,968 - src.aggregator_scraper - DEBUG - Added: AJK Flyttfirma AB from Konkurslistan.se
+2025-12-28 00:35:30,970 - src.aggregator_scraper - DEBUG - Added: Crispy Kebab i Ljungby AB from Konkurslistan.se
+2025-12-28 00:35:30,972 - src.aggregator_scraper - DEBUG - Added: Musculus i Norr AB from Konkurslistan.se
+2025-12-28 00:35:30,974 - src.aggregator_scraper - DEBUG - Added: AB Svensk Hemvård from Konkurslistan.se
+2025-12-28 00:35:30,975 - src.aggregator_scraper - DEBUG - Added: NS MASKIN&TRANSPORT AB from Konkurslistan.se
+2025-12-28 00:35:30,978 - src.aggregator_scraper - DEBUG - Added: UBEK AB from Konkurslistan.se
+2025-12-28 00:35:30,980 - src.aggregator_scraper - DEBUG - Added: Hedh-Escalante Chocolatier AB from Konkurslistan.se
+2025-12-28 00:35:30,982 - src.aggregator_scraper - DEBUG - Added: Thermo Isolering i Karlstad AB from Konkurslistan.se
+2025-12-28 00:35:30,984 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Åstol 2 from Konkurslistan.se
+2025-12-28 00:35:30,986 - src.aggregator_scraper - DEBUG - Added: Payless Colore Europe AB from Konkurslistan.se
+2025-12-28 00:35:30,987 - src.aggregator_scraper - DEBUG - Added: Skeningarna Utveckling AB from Konkurslistan.se
+2025-12-28 00:35:30,989 - src.aggregator_scraper - DEBUG - Added: Poozesh Frisör AB from Konkurslistan.se
+2025-12-28 00:35:30,991 - src.aggregator_scraper - DEBUG - Added: Nutri Administration Stockholm AB from Konkurslistan.se
+2025-12-28 00:35:30,993 - src.aggregator_scraper - DEBUG - Added: Orient Livs i Gislaved AB from Konkurslistan.se
+2025-12-28 00:35:30,995 - src.aggregator_scraper - DEBUG - Added: Tamd Fastighetsförvaltning AB from Konkurslistan.se
+2025-12-28 00:35:30,997 - src.aggregator_scraper - DEBUG - Added: Viriren AB from Konkurslistan.se
+2025-12-28 00:35:30,998 - src.aggregator_scraper - DEBUG - Added: Gemlinge Fastigheter AB from Konkurslistan.se
+2025-12-28 00:35:31,000 - src.aggregator_scraper - DEBUG - Added: Artha AB from Konkurslistan.se
+2025-12-28 00:35:31,002 - src.aggregator_scraper - DEBUG - Added: Maglarp Consulting AB from Konkurslistan.se
+2025-12-28 00:35:31,004 - src.aggregator_scraper - DEBUG - Added: eriks lilla värld AB from Konkurslistan.se
+2025-12-28 00:35:31,006 - src.aggregator_scraper - DEBUG - Added: Aslan KTS AB from Konkurslistan.se
+2025-12-28 00:35:31,007 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Kjellbergsgatan 3 from Konkurslistan.se
+2025-12-28 00:35:31,009 - src.aggregator_scraper - DEBUG - Added: Planet Kids Nursery School, Ek. för. from Konkurslistan.se
+2025-12-28 00:35:31,011 - src.aggregator_scraper - DEBUG - Added: Många Bäckar Små AB from Konkurslistan.se
+2025-12-28 00:35:31,013 - src.aggregator_scraper - DEBUG - Added: PRBTVA AB from Konkurslistan.se
+2025-12-28 00:35:31,014 - src.aggregator_scraper - DEBUG - Added: Sound Art Sweden AB from Konkurslistan.se
+2025-12-28 00:35:31,016 - src.aggregator_scraper - DEBUG - Added: Glada Köpings Livs AB from Konkurslistan.se
+2025-12-28 00:35:31,018 - src.aggregator_scraper - DEBUG - Added: Företag Retreats Sweden AB from Konkurslistan.se
+2025-12-28 00:35:31,020 - src.aggregator_scraper - DEBUG - Added: Quantum Tunnelling Software Sweden AB from Konkurslistan.se
+2025-12-28 00:35:31,021 - src.aggregator_scraper - DEBUG - Added: Prima Kött i Köping AB from Konkurslistan.se
+2025-12-28 00:35:31,023 - src.aggregator_scraper - DEBUG - Added: Stark Hand Bygg AB from Konkurslistan.se
+2025-12-28 00:35:31,025 - src.aggregator_scraper - DEBUG - Added: AB Målerikonsult Mats Bladh from Konkurslistan.se
+2025-12-28 00:35:31,027 - src.aggregator_scraper - DEBUG - Added: Dug Foodtech AB (publ) from Konkurslistan.se
+2025-12-28 00:35:31,029 - src.aggregator_scraper - DEBUG - Added: RS joursvets AB from Konkurslistan.se
+2025-12-28 00:35:31,031 - src.aggregator_scraper - DEBUG - Added: Nils Olofsson Konsult Aktiebolag from Konkurslistan.se
+2025-12-28 00:35:31,033 - src.aggregator_scraper - DEBUG - Added: Junogatans Bilvård AB from Konkurslistan.se
+2025-12-28 00:35:31,035 - src.aggregator_scraper - DEBUG - Added: VenDev Aktiebolag from Konkurslistan.se
+2025-12-28 00:35:31,036 - src.aggregator_scraper - DEBUG - Added: Röste Holding AB from Konkurslistan.se
+2025-12-28 00:35:31,038 - src.aggregator_scraper - DEBUG - Added: DUNWEL AB from Konkurslistan.se
+2025-12-28 00:35:31,040 - src.aggregator_scraper - DEBUG - Added: PH Heavy Solutions AB from Konkurslistan.se
+2025-12-28 00:35:31,041 - src.aggregator_scraper - DEBUG - Added: A-N Maskindepån & Entreprenad AB from Konkurslistan.se
+2025-12-28 00:35:31,043 - src.aggregator_scraper - DEBUG - Added: Röste Bostäder AB from Konkurslistan.se
+2025-12-28 00:35:31,412 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-28 00:35:35,395 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-28 00:35:35,411 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
+2025-12-28 00:35:35,411 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
+2025-12-28 00:41:51,095 - src.agent - INFO - Scraped 103 bankruptcy records
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record Visvall bilteknik AB (559305-2573) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record The Brighthouse AB (559202-2049) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record Söderhamn Sportcenter AB (559296-1071) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record Storno Logg AB (559001-7389) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record Som Butik AB (556901-5257) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,096 - src.filter - DEBUG - Record Skandinavisk Boutveckling Projekt AB (559323-7554) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Skandinavisk Boutveckling Holding 2 AB (559349-2316) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Salamanca in Sweden AB (559255-5857) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record SOLIRO AB (559490-9920) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record RUS pizzeria AB (559403-2988) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record QVICK's MINIGRÄV Handelsbolag (916922-4012) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Charkeriet i Huskvarna AB (556766-5616) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Aphatech AB (559133-4882) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Dan Hall Holding AB (559292-3865) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Af bilar & bilverkstad AB (559525-4821) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record PINTERI AB (559114-7615) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Gramsi AB (559237-4986) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Kattvikskajen Schweizeri & Stenugnsbageri AB (559287-8663) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Attefallspecialisten Sverige AB (556893-8897) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Cross west transport AB (559431-9500) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Nordic Worx AB (559420-8976) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Capital Exchange Markets (CEM) AB (556889-8927) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record BRESHKE BYGG AB (559307-7117) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Mats Kilander Ekonomi AB (556219-0131) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Besiktningsportalen Stockholm AB (559305-7952) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record European Quality Transport & Logistics AB (559349-8636) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Tranarö marin AB (556666-9429) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record COPMOD AB (559318-7023) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Oriel Stockholm AB (556907-5210) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Ski The Planet AB (559350-6347) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Vero Transport AB (556990-1910) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Mats Lågprishandel AB (556625-0824) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Harrion AB (556535-0518) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record HSB Bostadsrättsförening Margaretavägen (769633-9717) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Equality Development Center West Sweden, EDCS EK FÖR (769626-9914) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Hälsans Hus i Lund, Ekonomisk förening (769638-9092) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Parapu AB (556691-2902) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Xertify AB (559332-2091) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Osterman Fastighet AB (556912-9264) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Brismo SemiColon AB (556811-6700) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record MeKKon industrisupport Laxå AB (559214-3290) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Alma Grill AB (559346-5767) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,097 - src.filter - DEBUG - Record Goggo Godis AB (559240-1276) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Zeepay JV AB (559411-9884) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record ZABUX B.T.S AB (559295-9489) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Ruts Fastighet AB (559161-6924) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Vanadis Tvätt & rekond AB (559412-9339) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Gyllenhus AB (556828-6768) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Thai Town Örnsköldsvik AB (559015-3218) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record GAR Pension AB (559337-0801) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Springy AB (559311-2997) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Hair and beauty i Luleå AB (556845-3467) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Kipuwex AB (559442-3930) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record KD Tech AB (559307-8560) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record GRAB Entreprenad AB (559058-4339) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record N-TRANS AB (559377-9480) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Klimat & Fastighetsteknik i Trosa AB (559200-3239) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Aktiebolaget Borlänge Biluthyrning (556393-4370) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record North Wind Aviation AB (559393-7716) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Solgrann & Company AB (559415-0798) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record AR Dekor AB (559462-0212) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record AJK Flyttfirma AB (559436-6139) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Crispy Kebab i Ljungby AB (559490-0846) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Musculus i Norr AB (556817-8619) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record AB Svensk Hemvård (556976-9267) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record NS MASKIN&TRANSPORT AB (559504-7381) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record UBEK AB (559284-6579) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Hedh-Escalante Chocolatier AB (559102-8476) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Thermo Isolering i Karlstad AB (556920-6070) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Bostadsrättsföreningen Åstol 2 (769635-2512) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Payless Colore Europe AB (559475-4896) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Skeningarna Utveckling AB (556620-1777) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Poozesh Frisör AB (559331-7778) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Nutri Administration Stockholm AB (559298-4107) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Orient Livs i Gislaved AB (559035-0558) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Tamd Fastighetsförvaltning AB (559488-3034) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Viriren AB (559441-0341) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Gemlinge Fastigheter AB (556642-7596) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Artha AB (559190-6291) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record Maglarp Consulting AB (559183-0442) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,098 - src.filter - DEBUG - Record eriks lilla värld AB (559274-9922) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Aslan KTS AB (559048-6584) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Bostadsrättsföreningen Kjellbergsgatan 3 (769638-2030) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Planet Kids Nursery School, Ek. för. (769601-4625) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Många Bäckar Små AB (556520-4277) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record PRBTVA AB (556666-7951) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Sound Art Sweden AB (559201-8476) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Glada Köpings Livs AB (559489-9600) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Företag Retreats Sweden AB (559523-5150) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Quantum Tunnelling Software Sweden AB (559071-3979) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Prima Kött i Köping AB (559447-0543) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Stark Hand Bygg AB (559205-8522) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record AB Målerikonsult Mats Bladh (559497-9535) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Dug Foodtech AB (publ) (559054-4655) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record RS joursvets AB (559252-5595) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Nils Olofsson Konsult Aktiebolag (556329-9311) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Junogatans Bilvård AB (559243-0515) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record VenDev Aktiebolag (556052-9280) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Röste Holding AB (559394-0702) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record DUNWEL AB (559311-1494) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record PH Heavy Solutions AB (559519-5933) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record A-N Maskindepån & Entreprenad AB (559348-6706) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - DEBUG - Record Röste Bostäder AB (559394-1320) MATCHED: no filter criteria - showing all
+2025-12-28 00:41:51,099 - src.filter - INFO - Filtered 103 records -> 103 matches
+2025-12-28 00:41:51,099 - src.agent - INFO - Filtered to 103 matching records
+2025-12-28 00:41:51,172 - src.agent - INFO - Stored 103 records in database
+2025-12-28 00:41:51,177 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_004151.json and data/exports/bankruptcies_2025_12_20251228_004151.csv
+2025-12-28 00:41:51,178 - src.agent - INFO - Monthly report completed: 103 found, 103 matched
+2025-12-28 00:53:32,375 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:53:32,376 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:53:33,186 - src.agent - INFO - Scraped 8 bankruptcy records
+2025-12-28 00:53:33,187 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2025-12-28 00:53:35,315 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:36,378 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:37,444 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:38,509 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:39,577 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:40,646 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:41,714 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:42,782 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:42,813 - src.filter - INFO - Filtered 8 records -> 8 matches
+2025-12-28 00:53:42,813 - src.agent - INFO - Filtered to 8 matching records
+2025-12-28 00:53:42,820 - src.agent - INFO - Stored 8 records in database
+2025-12-28 00:53:42,821 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_005342.json and data/exports/bankruptcies_2025_12_20251228_005342.csv
+2025-12-28 00:53:42,821 - src.agent - INFO - Monthly report completed: 8 found, 8 matched
+2025-12-28 00:53:47,877 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:53:47,878 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:53:48,485 - src.agent - INFO - Scraped 6 bankruptcy records
+2025-12-28 00:53:48,485 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2025-12-28 00:53:48,861 - src.lawyer_enrichment - DEBUG - Bolagsverket browser initialized
+2025-12-28 00:53:48,861 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 345678-9012
+2025-12-28 00:53:50,145 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:50,145 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 345678-9012
+2025-12-28 00:53:50,145 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 567890-1234
+2025-12-28 00:53:51,209 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:51,209 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 567890-1234
+2025-12-28 00:53:51,209 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 234567-8901
+2025-12-28 00:53:52,277 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:52,277 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 234567-8901
+2025-12-28 00:53:52,277 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 789012-3456
+2025-12-28 00:53:53,345 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:53,345 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 789012-3456
+2025-12-28 00:53:53,345 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 123456-7890
+2025-12-28 00:53:54,415 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:54,415 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 123456-7890
+2025-12-28 00:53:54,415 - src.lawyer_enrichment - DEBUG - Enriching lawyer info for 890123-4567
+2025-12-28 00:53:55,493 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 00:53:55,493 - src.lawyer_enrichment - DEBUG - No lawyer contact info found for 890123-4567
+2025-12-28 00:53:55,546 - src.lawyer_enrichment - DEBUG - Bolagsverket browser closed
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record Restaurang Smak AB (345678-9012) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record Konsultbolaget AB (567890-1234) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record IT Solutions Sverige AB (234567-8901) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record Tillverknings AB (789012-3456) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record Byggföretaget AB (123456-7890) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - DEBUG - Record Städservice Malmö AB (890123-4567) MATCHED: no filter criteria - showing all
+2025-12-28 00:53:55,546 - src.filter - INFO - Filtered 6 records -> 6 matches
+2025-12-28 00:53:55,546 - src.agent - INFO - Filtered to 6 matching records
+2025-12-28 00:53:55,557 - src.agent - INFO - Stored 6 records in database
+2025-12-28 00:53:55,558 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_005355.json and data/exports/bankruptcies_2025_12_20251228_005355.csv
+2025-12-28 00:53:55,559 - src.agent - INFO - Monthly report completed: 6 found, 6 matched
+2025-12-28 00:57:13,890 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:57:13,891 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:57:14,901 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-28 00:57:19,813 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-28 00:57:20,200 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-28 00:57:25,105 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2025-12-28 00:57:25,608 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-28 00:57:29,534 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-28 00:57:29,551 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
+2025-12-28 00:57:29,551 - src.aggregator_scraper - INFO - Enriching 103 records with company data...

@@ -29,6 +29,7 @@ from .aggregator_scraper import (
 )
 from .database import BankruptcyDatabase
 from .enrichment import CompanyEnricher, SNICodeLookup
+from .lawyer_enrichment import BolagsverketLawyerEnricher
 from .filter import BankruptcyFilter
 from .email_notifier import EmailNotifier
 from .agent import BankruptcyMonitorAgent, run_agent
@@ -48,6 +49,7 @@ __all__ = [
     "BankruptcyDatabase",
     "CompanyEnricher",
     "SNICodeLookup",
+    "BolagsverketLawyerEnricher",
     "BankruptcyFilter",
     "EmailNotifier",
     "BankruptcyMonitorAgent",

@@ -13,6 +13,7 @@ from .scraper import MockBankruptcyScraper
 from .aggregator_scraper import MultiSourceScraper
 from .database import BankruptcyDatabase
 from .enrichment import CompanyEnricher
+from .lawyer_enrichment import BolagsverketLawyerEnricher
 from .filter import BankruptcyFilter
 from .email_notifier import EmailNotifier
 from .models import BankruptcyRecord
@@ -43,6 +44,11 @@ class BankruptcyMonitorAgent:
         # Initialize components
         self.db = BankruptcyDatabase(self.settings.database_path)
         self.enricher = CompanyEnricher()
+        self.lawyer_enricher = BolagsverketLawyerEnricher(
+            headless=self.settings.headless,
+            timeout=self.settings.timeout,
+            request_delay=self.settings.request_delay
+        )
         self.filter = BankruptcyFilter(self.settings.filter_criteria)
         self.notifier = EmailNotifier(self.settings.email_config)
         
@@ -165,8 +171,15 @@ class BankruptcyMonitorAgent:
         self,
         records: list[BankruptcyRecord]
     ) -> list[BankruptcyRecord]:
-        """Enrich records with additional company information."""
-        return await self.enricher.enrich_batch(records)
+        """Enrich records with additional company and lawyer contact information."""
+        # First enrich company information
+        records = await self.enricher.enrich_batch(records)
+
+        # Then enrich lawyer contact information from Bolagsverket
+        logger.info("Enriching lawyer contact information from Bolagsverket...")
+        records = await self.lawyer_enricher.enrich_batch(records, concurrency=1)
+
+        return records
     
     def _export_files(
         self,
