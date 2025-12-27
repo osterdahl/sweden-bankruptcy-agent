@@ -1,0 +1,55 @@
+2025-12-27 23:03:50,104 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-27 23:03:50,106 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-27 23:03:50,917 - src.agent - INFO - Scraped 8 bankruptcy records
+2025-12-27 23:03:50,918 - src.filter - INFO - Filtered 8 records -> 8 matches
+2025-12-27 23:03:50,918 - src.agent - INFO - Filtered to 8 matching records
+2025-12-27 23:03:50,933 - src.agent - INFO - Stored 8 records in database
+2025-12-27 23:03:50,935 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251227_230350.json and data/exports/bankruptcies_2025_12_20251227_230350.csv
+2025-12-27 23:03:50,936 - src.agent - INFO - Monthly report completed: 8 found, 8 matched
+2025-12-27 23:05:11,430 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-27 23:05:11,430 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-27 23:05:13,414 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-27 23:05:17,664 - src.aggregator_scraper - INFO - Found 0 potential entries on Allabolag.se
+2025-12-27 23:05:17,981 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-27 23:05:22,474 - src.aggregator_scraper - INFO - Found 0 potential entries on Konkurslistan.se
+2025-12-27 23:05:22,803 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-27 23:05:26,757 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-27 23:05:26,772 - src.aggregator_scraper - INFO - Total unique records after deduplication: 0
+2025-12-27 23:05:26,772 - src.agent - INFO - Scraped 0 bankruptcy records
+2025-12-27 23:05:26,772 - src.filter - INFO - Filtered 0 records -> 0 matches
+2025-12-27 23:05:26,772 - src.agent - INFO - Filtered to 0 matching records
+2025-12-27 23:05:26,772 - src.agent - INFO - Stored 0 records in database
+2025-12-27 23:05:26,772 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251227_230526.json and data/exports/bankruptcies_2025_12_20251227_230526.csv
+2025-12-27 23:05:26,773 - src.agent - INFO - Monthly report completed: 0 found, 0 matched
+2025-12-27 23:05:51,474 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-27 23:05:51,474 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-27 23:05:52,285 - src.agent - INFO - Scraped 8 bankruptcy records
+2025-12-27 23:05:52,286 - src.filter - DEBUG - Record Byggföretaget AB (123456-7890) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Detaljhandel Sverige AB (678901-2345) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record IT Solutions Sverige AB (234567-8901) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Restaurang Smak AB (345678-9012) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Konsultbolaget AB (567890-1234) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Städservice Malmö AB (890123-4567) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Transport & Logistik AB (456789-0123) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - DEBUG - Record Tillverknings AB (789012-3456) MATCHED: no filter criteria - showing all
+2025-12-27 23:05:52,287 - src.filter - INFO - Filtered 8 records -> 8 matches
+2025-12-27 23:05:52,287 - src.agent - INFO - Filtered to 8 matching records
+2025-12-27 23:05:52,302 - src.agent - INFO - Stored 8 records in database
+2025-12-27 23:05:52,303 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251227_230552.json and data/exports/bankruptcies_2025_12_20251227_230552.csv
+2025-12-27 23:05:52,303 - src.agent - INFO - Monthly report completed: 8 found, 8 matched
+2025-12-28 00:11:22,689 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-28 00:11:22,692 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-28 00:11:23,484 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-28 00:11:28,371 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-28 00:11:28,709 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-28 00:12:02,815 - src.aggregator_scraper - WARNING - Timeout loading https://www.konkurslistan.se/alla-konkurser
+2025-12-28 00:12:03,199 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-28 00:12:07,199 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-28 00:12:07,214 - src.aggregator_scraper - INFO - Total unique records after deduplication: 10
+2025-12-28 00:12:07,214 - src.aggregator_scraper - INFO - Enriching 10 records with company data...
+2025-12-28 00:12:49,392 - src.agent - INFO - Scraped 10 bankruptcy records
+2025-12-28 00:12:49,393 - src.filter - INFO - Filtered 10 records -> 10 matches
+2025-12-28 00:12:49,393 - src.agent - INFO - Filtered to 10 matching records
+2025-12-28 00:12:49,403 - src.agent - INFO - Stored 10 records in database
+2025-12-28 00:12:49,404 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251228_001249.json and data/exports/bankruptcies_2025_12_20251228_001249.csv
+2025-12-28 00:12:49,405 - src.agent - INFO - Monthly report completed: 10 found, 10 matched

@@ -1,0 +1,189 @@
+name: Monthly Bankruptcy Report
+
+on:
+  # Run at 6 AM UTC on the 1st of every month
+  schedule:
+    - cron: '0 6 1 * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      year:
+        description: 'Year to process'
+        required: false
+        default: ''
+      month:
+        description: 'Month to process (1-12)'
+        required: false
+        default: ''
+      skip_email:
+        description: 'Skip sending email'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps
+      
+      - name: Determine date parameters
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.year }}" ]; then
+            echo "year=${{ github.event.inputs.year }}" >> $GITHUB_OUTPUT
+          else
+            echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -n "${{ github.event.inputs.month }}" ]; then
+            echo "month=${{ github.event.inputs.month }}" >> $GITHUB_OUTPUT
+          else
+            # Default to previous month (since we run on 1st of month)
+            PREV_MONTH=$(date -d "1 month ago" +%m | sed 's/^0//')
+            echo "month=$PREV_MONTH" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run bankruptcy monitor
+        env:
+          # Email configuration
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+          
+          # Filter criteria
+          FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES }}
+          FILTER_MAX_EMPLOYEES: ${{ secrets.FILTER_MAX_EMPLOYEES }}
+          FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE }}
+          FILTER_MAX_REVENUE: ${{ secrets.FILTER_MAX_REVENUE }}
+          FILTER_BUSINESS_TYPES: ${{ secrets.FILTER_BUSINESS_TYPES }}
+          FILTER_REGIONS: ${{ secrets.FILTER_REGIONS }}
+          FILTER_EXCLUDE_KEYWORDS: ${{ secrets.FILTER_EXCLUDE_KEYWORDS }}
+          FILTER_INCLUDE_KEYWORDS: ${{ secrets.FILTER_INCLUDE_KEYWORDS }}
+          
+          # Scraper settings
+          HEADLESS: 'true'
+          REQUEST_DELAY: '2.0'
+          TIMEOUT: '30'
+        run: |
+          # Build command
+          CMD="python main.py --year ${{ steps.date.outputs.year }} --month ${{ steps.date.outputs.month }} -v"
+          
+          # Add --no-email if requested
+          if [ "${{ github.event.inputs.skip_email }}" = "true" ]; then
+            CMD="$CMD --no-email"
+          fi
+          
+          echo "Running: $CMD"
+          $CMD
+      
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bankruptcy-report-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}
+          path: |
+            data/exports/
+            bankruptcy_agent.log
+          retention-days: 90
+      
+      - name: Upload database
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: database-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}
+          path: data/bankruptcies.db
+          retention-days: 365
+      
+      - name: Report summary
+        if: always()
+        run: |
+          echo "## Bankruptcy Report Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Year:** ${{ steps.date.outputs.year }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Month:** ${{ steps.date.outputs.month }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f data/exports/*.json ]; then
+            RECORD_COUNT=$(cat data/exports/*.json | python -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
+            echo "- **Records exported:** $RECORD_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  notify-on-failure:
+    needs: generate-report
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Send failure notification
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+        run: |
+          python << 'EOF'
+          import os
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          
+          smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
+          smtp_port = int(os.environ.get('SMTP_PORT', 587))
+          sender = os.environ.get('SENDER_EMAIL', '')
+          password = os.environ.get('SENDER_PASSWORD', '')
+          recipients = os.environ.get('RECIPIENT_EMAILS', '').split(',')
+          
+          if not all([sender, password, recipients[0]]):
+              print("Email not configured, skipping notification")
+              exit(0)
+          
+          msg = MIMEMultipart()
+          msg['From'] = sender
+          msg['To'] = ', '.join(recipients)
+          msg['Subject'] = '⚠️ Bankruptcy Monitor FAILED'
+          
+          body = """
+          The monthly bankruptcy monitoring job has failed.
+          
+          Please check the GitHub Actions logs for details:
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          This is an automated notification.
+          """
+          
+          msg.attach(MIMEText(body, 'plain'))
+          
+          try:
+              with smtplib.SMTP(smtp_server, smtp_port) as server:
+                  server.starttls()
+                  server.login(sender, password)
+                  server.send_message(msg)
+              print("Failure notification sent")
+          except Exception as e:
+              print(f"Failed to send notification: {e}")
+          EOF

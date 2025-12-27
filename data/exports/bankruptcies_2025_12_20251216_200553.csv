@@ -1,0 +1,9 @@
+org_number,company_name,declaration_date,court,status,city,region,business_type,employees,revenue,administrator,law_firm,source_url
+234567-8901,IT Solutions Sverige AB,2025-12-12,Uppsala tingsrätt,Försatt i konkurs,Göteborg,Stockholms län,IT,45,12000000.0,Anna Svensson,Mannheimer Swartling,https://poit.bolagsverket.se/poit-app/visa/234567-8901
+789012-3456,Tillverknings AB,2025-12-25,Göteborgs tingsrätt,Försatt i konkurs,Malmö,Västra Götalands län,Tillverkning,85,35000000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/789012-3456
+567890-1234,Konsultbolaget AB,2025-12-28,Malmö tingsrätt,Försatt i konkurs,Uppsala,Stockholms län,Konsult,3,800000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/567890-1234
+678901-2345,Detaljhandel Sverige AB,2025-12-08,Göteborgs tingsrätt,Försatt i konkurs,Uppsala,Stockholms län,Handel,25,8000000.0,Anna Svensson,Mannheimer Swartling,https://poit.bolagsverket.se/poit-app/visa/678901-2345
+123456-7890,Byggföretaget AB,2025-12-10,Stockholms tingsrätt,Försatt i konkurs,Göteborg,Stockholms län,Bygg,15,5000000.0,Petter Vaeren,Lindahl Advokatbyrå,https://poit.bolagsverket.se/poit-app/visa/123456-7890
+890123-4567,Städservice Malmö AB,2025-12-20,Uppsala tingsrätt,Försatt i konkurs,Uppsala,Stockholms län,Städ,12,3500000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/890123-4567
+456789-0123,Transport & Logistik AB,2025-12-27,Göteborgs tingsrätt,Försatt i konkurs,Göteborg,Västra Götalands län,Transport,120,50000000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/456789-0123
+345678-9012,Restaurang Smak AB,2025-12-22,Stockholms tingsrätt,Försatt i konkurs,Stockholm,Skåne län,Restaurang,8,2000000.0,Anna Svensson,Mannheimer Swartling,https://poit.bolagsverket.se/poit-app/visa/345678-9012
