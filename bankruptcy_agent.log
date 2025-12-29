@@ -625,3 +625,123 @@
 2025-12-29 16:28:40,864 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
 2025-12-29 16:28:40,884 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
 2025-12-29 16:28:40,884 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
+2025-12-29 23:20:08,283 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-29 23:20:08,284 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-29 23:20:08,720 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-29 23:20:13,569 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-29 23:20:13,586 - src.aggregator_scraper - DEBUG - Added: Visvall bilteknik AB from Allabolag.se
+2025-12-29 23:20:13,589 - src.aggregator_scraper - DEBUG - Added: The Brighthouse AB from Allabolag.se
+2025-12-29 23:20:13,592 - src.aggregator_scraper - DEBUG - Added: Söderhamn Sportcenter AB from Allabolag.se
+2025-12-29 23:20:13,594 - src.aggregator_scraper - DEBUG - Added: Storno Logg AB from Allabolag.se
+2025-12-29 23:20:13,597 - src.aggregator_scraper - DEBUG - Added: Som Butik AB from Allabolag.se
+2025-12-29 23:20:13,599 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Projekt AB from Allabolag.se
+2025-12-29 23:20:13,602 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Holding 2 AB from Allabolag.se
+2025-12-29 23:20:13,604 - src.aggregator_scraper - DEBUG - Added: Salamanca in Sweden AB from Allabolag.se
+2025-12-29 23:20:13,606 - src.aggregator_scraper - DEBUG - Added: SOLIRO AB from Allabolag.se
+2025-12-29 23:20:13,608 - src.aggregator_scraper - DEBUG - Added: RUS pizzeria AB from Allabolag.se
+2025-12-29 23:20:13,963 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-29 23:20:18,888 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2025-12-29 23:20:18,902 - src.aggregator_scraper - DEBUG - Added: BM ENTERPRISES AB from Konkurslistan.se
+2025-12-29 23:20:18,905 - src.aggregator_scraper - DEBUG - Added: Tage & Söner Byggnads AB from Konkurslistan.se
+2025-12-29 23:20:18,907 - src.aggregator_scraper - DEBUG - Added: PA Contractor AB from Konkurslistan.se
+2025-12-29 23:20:18,909 - src.aggregator_scraper - DEBUG - Added: Food Court i Gränby AB from Konkurslistan.se
+2025-12-29 23:20:18,912 - src.aggregator_scraper - DEBUG - Added: Comprehensivus AB from Konkurslistan.se
+2025-12-29 23:20:18,914 - src.aggregator_scraper - DEBUG - Added: Norra allservice AB from Konkurslistan.se
+2025-12-29 23:20:18,916 - src.aggregator_scraper - DEBUG - Added: QVICK's MINIGRÄV Handelsbolag from Konkurslistan.se
+2025-12-29 23:20:18,918 - src.aggregator_scraper - DEBUG - Added: Charkeriet i Huskvarna AB from Konkurslistan.se
+2025-12-29 23:20:18,920 - src.aggregator_scraper - DEBUG - Added: Aphatech AB from Konkurslistan.se
+2025-12-29 23:20:18,922 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Holding 2 AB
+2025-12-29 23:20:18,924 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Projekt AB
+2025-12-29 23:20:18,926 - src.aggregator_scraper - DEBUG - Added: Dan Hall Holding AB from Konkurslistan.se
+2025-12-29 23:20:18,928 - src.aggregator_scraper - DEBUG - Merged: Storno Logg AB
+2025-12-29 23:20:18,930 - src.aggregator_scraper - DEBUG - Added: Af bilar & bilverkstad AB from Konkurslistan.se
+2025-12-29 23:20:18,932 - src.aggregator_scraper - DEBUG - Added: PINTERI AB from Konkurslistan.se
+2025-12-29 23:20:18,934 - src.aggregator_scraper - DEBUG - Added: Gramsi AB from Konkurslistan.se
+2025-12-29 23:20:18,936 - src.aggregator_scraper - DEBUG - Added: Kattvikskajen Schweizeri & Stenugnsbageri AB from Konkurslistan.se
+2025-12-29 23:20:18,938 - src.aggregator_scraper - DEBUG - Added: Attefallspecialisten Sverige AB from Konkurslistan.se
+2025-12-29 23:20:18,941 - src.aggregator_scraper - DEBUG - Added: Cross west transport AB from Konkurslistan.se
+2025-12-29 23:20:18,943 - src.aggregator_scraper - DEBUG - Merged: Som Butik AB
+2025-12-29 23:20:18,945 - src.aggregator_scraper - DEBUG - Merged: SOLIRO AB
+2025-12-29 23:20:18,947 - src.aggregator_scraper - DEBUG - Merged: Salamanca in Sweden AB
+2025-12-29 23:20:18,949 - src.aggregator_scraper - DEBUG - Added: Nordic Worx AB from Konkurslistan.se
+2025-12-29 23:20:18,951 - src.aggregator_scraper - DEBUG - Added: Capital Exchange Markets (CEM) AB from Konkurslistan.se
+2025-12-29 23:20:18,953 - src.aggregator_scraper - DEBUG - Added: BRESHKE BYGG AB from Konkurslistan.se
+2025-12-29 23:20:18,955 - src.aggregator_scraper - DEBUG - Merged: The Brighthouse AB
+2025-12-29 23:20:18,958 - src.aggregator_scraper - DEBUG - Added: Mats Kilander Ekonomi AB from Konkurslistan.se
+2025-12-29 23:20:18,960 - src.aggregator_scraper - DEBUG - Added: Besiktningsportalen Stockholm AB from Konkurslistan.se
+2025-12-29 23:20:18,962 - src.aggregator_scraper - DEBUG - Added: European Quality Transport & Logistics AB from Konkurslistan.se
+2025-12-29 23:20:18,964 - src.aggregator_scraper - DEBUG - Added: Tranarö marin AB from Konkurslistan.se
+2025-12-29 23:20:18,966 - src.aggregator_scraper - DEBUG - Added: COPMOD AB from Konkurslistan.se
+2025-12-29 23:20:18,968 - src.aggregator_scraper - DEBUG - Added: Oriel Stockholm AB from Konkurslistan.se
+2025-12-29 23:20:18,970 - src.aggregator_scraper - DEBUG - Added: Ski The Planet AB from Konkurslistan.se
+2025-12-29 23:20:18,972 - src.aggregator_scraper - DEBUG - Added: Vero Transport AB from Konkurslistan.se
+2025-12-29 23:20:18,974 - src.aggregator_scraper - DEBUG - Added: Mats Lågprishandel AB from Konkurslistan.se
+2025-12-29 23:20:18,976 - src.aggregator_scraper - DEBUG - Added: Harrion AB from Konkurslistan.se
+2025-12-29 23:20:18,978 - src.aggregator_scraper - DEBUG - Added: HSB Bostadsrättsförening Margaretavägen from Konkurslistan.se
+2025-12-29 23:20:18,980 - src.aggregator_scraper - DEBUG - Added: Equality Development Center West Sweden, EDCS EK FÖR from Konkurslistan.se
+2025-12-29 23:20:18,982 - src.aggregator_scraper - DEBUG - Added: Hälsans Hus i Lund, Ekonomisk förening from Konkurslistan.se
+2025-12-29 23:20:18,984 - src.aggregator_scraper - DEBUG - Added: Parapu AB from Konkurslistan.se
+2025-12-29 23:20:18,986 - src.aggregator_scraper - DEBUG - Added: Xertify AB from Konkurslistan.se
+2025-12-29 23:20:18,987 - src.aggregator_scraper - DEBUG - Added: Osterman Fastighet AB from Konkurslistan.se
+2025-12-29 23:20:18,989 - src.aggregator_scraper - DEBUG - Added: Brismo SemiColon AB from Konkurslistan.se
+2025-12-29 23:20:18,992 - src.aggregator_scraper - DEBUG - Added: MeKKon industrisupport Laxå AB from Konkurslistan.se
+2025-12-29 23:20:18,994 - src.aggregator_scraper - DEBUG - Added: Alma Grill AB from Konkurslistan.se
+2025-12-29 23:20:18,996 - src.aggregator_scraper - DEBUG - Added: Goggo Godis AB from Konkurslistan.se
+2025-12-29 23:20:18,998 - src.aggregator_scraper - DEBUG - Added: Zeepay JV AB from Konkurslistan.se
+2025-12-29 23:20:19,000 - src.aggregator_scraper - DEBUG - Added: ZABUX B.T.S AB from Konkurslistan.se
+2025-12-29 23:20:19,001 - src.aggregator_scraper - DEBUG - Added: Ruts Fastighet AB from Konkurslistan.se
+2025-12-29 23:20:19,003 - src.aggregator_scraper - DEBUG - Added: Vanadis Tvätt & rekond AB from Konkurslistan.se
+2025-12-29 23:20:19,006 - src.aggregator_scraper - DEBUG - Added: Gyllenhus AB from Konkurslistan.se
+2025-12-29 23:20:19,008 - src.aggregator_scraper - DEBUG - Added: Thai Town Örnsköldsvik AB from Konkurslistan.se
+2025-12-29 23:20:19,010 - src.aggregator_scraper - DEBUG - Added: GAR Pension AB from Konkurslistan.se
+2025-12-29 23:20:19,012 - src.aggregator_scraper - DEBUG - Added: Springy AB from Konkurslistan.se
+2025-12-29 23:20:19,014 - src.aggregator_scraper - DEBUG - Added: Hair and beauty i Luleå AB from Konkurslistan.se
+2025-12-29 23:20:19,016 - src.aggregator_scraper - DEBUG - Added: Kipuwex AB from Konkurslistan.se
+2025-12-29 23:20:19,018 - src.aggregator_scraper - DEBUG - Added: KD Tech AB from Konkurslistan.se
+2025-12-29 23:20:19,021 - src.aggregator_scraper - DEBUG - Added: GRAB Entreprenad AB from Konkurslistan.se
+2025-12-29 23:20:19,023 - src.aggregator_scraper - DEBUG - Added: N-TRANS AB from Konkurslistan.se
+2025-12-29 23:20:19,026 - src.aggregator_scraper - DEBUG - Added: Klimat & Fastighetsteknik i Trosa AB from Konkurslistan.se
+2025-12-29 23:20:19,028 - src.aggregator_scraper - DEBUG - Added: Aktiebolaget Borlänge Biluthyrning from Konkurslistan.se
+2025-12-29 23:20:19,029 - src.aggregator_scraper - DEBUG - Added: North Wind Aviation AB from Konkurslistan.se
+2025-12-29 23:20:19,032 - src.aggregator_scraper - DEBUG - Added: Solgrann & Company AB from Konkurslistan.se
+2025-12-29 23:20:19,033 - src.aggregator_scraper - DEBUG - Added: AR Dekor AB from Konkurslistan.se
+2025-12-29 23:20:19,035 - src.aggregator_scraper - DEBUG - Added: AJK Flyttfirma AB from Konkurslistan.se
+2025-12-29 23:20:19,037 - src.aggregator_scraper - DEBUG - Added: Crispy Kebab i Ljungby AB from Konkurslistan.se
+2025-12-29 23:20:19,039 - src.aggregator_scraper - DEBUG - Added: Musculus i Norr AB from Konkurslistan.se
+2025-12-29 23:20:19,041 - src.aggregator_scraper - DEBUG - Added: AB Svensk Hemvård from Konkurslistan.se
+2025-12-29 23:20:19,043 - src.aggregator_scraper - DEBUG - Added: NS MASKIN&TRANSPORT AB from Konkurslistan.se
+2025-12-29 23:20:19,045 - src.aggregator_scraper - DEBUG - Added: UBEK AB from Konkurslistan.se
+2025-12-29 23:20:19,047 - src.aggregator_scraper - DEBUG - Added: Hedh-Escalante Chocolatier AB from Konkurslistan.se
+2025-12-29 23:20:19,049 - src.aggregator_scraper - DEBUG - Added: Thermo Isolering i Karlstad AB from Konkurslistan.se
+2025-12-29 23:20:19,051 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Åstol 2 from Konkurslistan.se
+2025-12-29 23:20:19,053 - src.aggregator_scraper - DEBUG - Added: Payless Colore Europe AB from Konkurslistan.se
+2025-12-29 23:20:19,055 - src.aggregator_scraper - DEBUG - Added: Skeningarna Utveckling AB from Konkurslistan.se
+2025-12-29 23:20:19,057 - src.aggregator_scraper - DEBUG - Added: Poozesh Frisör AB from Konkurslistan.se
+2025-12-29 23:20:19,059 - src.aggregator_scraper - DEBUG - Added: Nutri Administration Stockholm AB from Konkurslistan.se
+2025-12-29 23:20:19,061 - src.aggregator_scraper - DEBUG - Added: Orient Livs i Gislaved AB from Konkurslistan.se
+2025-12-29 23:20:19,063 - src.aggregator_scraper - DEBUG - Added: Tamd Fastighetsförvaltning AB from Konkurslistan.se
+2025-12-29 23:20:19,065 - src.aggregator_scraper - DEBUG - Added: Viriren AB from Konkurslistan.se
+2025-12-29 23:20:19,067 - src.aggregator_scraper - DEBUG - Added: Gemlinge Fastigheter AB from Konkurslistan.se
+2025-12-29 23:20:19,069 - src.aggregator_scraper - DEBUG - Added: Artha AB from Konkurslistan.se
+2025-12-29 23:20:19,071 - src.aggregator_scraper - DEBUG - Added: Maglarp Consulting AB from Konkurslistan.se
+2025-12-29 23:20:19,073 - src.aggregator_scraper - DEBUG - Added: eriks lilla värld AB from Konkurslistan.se
+2025-12-29 23:20:19,075 - src.aggregator_scraper - DEBUG - Added: Aslan KTS AB from Konkurslistan.se
+2025-12-29 23:20:19,077 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Kjellbergsgatan 3 from Konkurslistan.se
+2025-12-29 23:20:19,079 - src.aggregator_scraper - DEBUG - Added: Planet Kids Nursery School, Ek. för. from Konkurslistan.se
+2025-12-29 23:20:19,081 - src.aggregator_scraper - DEBUG - Added: Många Bäckar Små AB from Konkurslistan.se
+2025-12-29 23:20:19,083 - src.aggregator_scraper - DEBUG - Added: PRBTVA AB from Konkurslistan.se
+2025-12-29 23:20:19,084 - src.aggregator_scraper - DEBUG - Added: Sound Art Sweden AB from Konkurslistan.se
+2025-12-29 23:20:19,086 - src.aggregator_scraper - DEBUG - Added: Glada Köpings Livs AB from Konkurslistan.se
+2025-12-29 23:20:19,089 - src.aggregator_scraper - DEBUG - Added: Företag Retreats Sweden AB from Konkurslistan.se
+2025-12-29 23:20:19,091 - src.aggregator_scraper - DEBUG - Added: Quantum Tunnelling Software Sweden AB from Konkurslistan.se
+2025-12-29 23:20:19,093 - src.aggregator_scraper - DEBUG - Added: Prima Kött i Köping AB from Konkurslistan.se
+2025-12-29 23:20:19,095 - src.aggregator_scraper - DEBUG - Added: Stark Hand Bygg AB from Konkurslistan.se
+2025-12-29 23:20:19,097 - src.aggregator_scraper - DEBUG - Added: AB Målerikonsult Mats Bladh from Konkurslistan.se
+2025-12-29 23:20:19,099 - src.aggregator_scraper - DEBUG - Added: Dug Foodtech AB (publ) from Konkurslistan.se
+2025-12-29 23:20:19,100 - src.aggregator_scraper - DEBUG - Added: RS joursvets AB from Konkurslistan.se
+2025-12-29 23:20:19,103 - src.aggregator_scraper - DEBUG - Added: Nils Olofsson Konsult Aktiebolag from Konkurslistan.se
+2025-12-29 23:20:19,105 - src.aggregator_scraper - DEBUG - Added: Junogatans Bilvård AB from Konkurslistan.se
+2025-12-29 23:20:19,471 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-29 23:20:23,363 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-29 23:20:23,381 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
+2025-12-29 23:20:23,381 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
