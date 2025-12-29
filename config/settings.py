@@ -65,19 +65,19 @@ class Settings:
     def from_env(cls) -> "Settings":
         """Load settings from environment variables."""
         filter_criteria = FilterCriteria(
-            min_employees=int(os.getenv("FILTER_MIN_EMPLOYEES", 0)) or None,
-            max_employees=int(os.getenv("FILTER_MAX_EMPLOYEES", 0)) or None,
-            min_revenue=float(os.getenv("FILTER_MIN_REVENUE", 0)) or None,
-            max_revenue=float(os.getenv("FILTER_MAX_REVENUE", 0)) or None,
+            min_employees=int(os.getenv("FILTER_MIN_EMPLOYEES") or 0) or None,
+            max_employees=int(os.getenv("FILTER_MAX_EMPLOYEES") or 0) or None,
+            min_revenue=float(os.getenv("FILTER_MIN_REVENUE") or 0) or None,
+            max_revenue=float(os.getenv("FILTER_MAX_REVENUE") or 0) or None,
             business_types=[t.strip() for t in os.getenv("FILTER_BUSINESS_TYPES", "").split(",") if t.strip()],
             regions=[r.strip() for r in os.getenv("FILTER_REGIONS", "").split(",") if r.strip()],
             exclude_keywords=[k.strip() for k in os.getenv("FILTER_EXCLUDE_KEYWORDS", "").split(",") if k.strip()],
             include_keywords=[k.strip() for k in os.getenv("FILTER_INCLUDE_KEYWORDS", "").split(",") if k.strip()],
         )
-        
+
         email_config = EmailConfig(
-            smtp_server=os.getenv("SMTP_SERVER", "smtp.gmail.com"),
-            smtp_port=int(os.getenv("SMTP_PORT", 587)),
+            smtp_server=os.getenv("SMTP_SERVER") or "smtp.gmail.com",
+            smtp_port=int(os.getenv("SMTP_PORT") or 587),
             use_tls=os.getenv("SMTP_USE_TLS", "true").lower() == "true",
             sender_email=os.getenv("SENDER_EMAIL", ""),
             sender_password=os.getenv("SENDER_PASSWORD", ""),
@@ -85,14 +85,14 @@ class Settings:
         )
         
         return cls(
-            database_path=os.getenv("DATABASE_PATH", "data/bankruptcies.db"),
-            export_path=os.getenv("EXPORT_PATH", "data/exports"),
-            request_delay=float(os.getenv("REQUEST_DELAY", 1.0)),
-            max_retries=int(os.getenv("MAX_RETRIES", 3)),
-            timeout=int(os.getenv("TIMEOUT", 30)),
-            headless=os.getenv("HEADLESS", "true").lower() == "true",
+            database_path=os.getenv("DATABASE_PATH") or "data/bankruptcies.db",
+            export_path=os.getenv("EXPORT_PATH") or "data/exports",
+            request_delay=float(os.getenv("REQUEST_DELAY") or 1.0),
+            max_retries=int(os.getenv("MAX_RETRIES") or 3),
+            timeout=int(os.getenv("TIMEOUT") or 30),
+            headless=(os.getenv("HEADLESS") or "true").lower() == "true",
             filter_criteria=filter_criteria,
             email_config=email_config,
-            schedule=os.getenv("SCHEDULE", "monthly"),
-            run_day_of_month=int(os.getenv("RUN_DAY_OF_MONTH", 1)),
+            schedule=os.getenv("SCHEDULE") or "monthly",
+            run_day_of_month=int(os.getenv("RUN_DAY_OF_MONTH") or 1),
         )
