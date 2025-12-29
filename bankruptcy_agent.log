@@ -352,3 +352,276 @@
 2025-12-28 00:57:29,534 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
 2025-12-28 00:57:29,551 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
 2025-12-28 00:57:29,551 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
+2025-12-28 01:04:03,100 - src.agent - INFO - Scraped 103 bankruptcy records
+2025-12-28 01:04:03,101 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2025-12-28 01:04:04,840 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:05,913 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:06,993 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:08,071 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:09,152 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:10,237 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:11,319 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:12,397 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:13,471 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:14,549 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:15,626 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:16,703 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:17,784 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:18,860 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:19,936 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:21,012 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:22,086 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:23,164 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:24,231 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:25,297 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:26,375 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:27,435 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:28,494 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:29,557 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:30,621 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:31,686 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:32,760 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:33,837 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:34,912 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:35,987 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-28 01:04:37,058 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:10:09,637 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-29 16:10:09,638 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-29 16:10:10,600 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-29 16:10:15,420 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-29 16:10:15,824 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-29 16:10:20,597 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2025-12-29 16:10:21,263 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-29 16:10:25,121 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-29 16:10:25,137 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
+2025-12-29 16:10:25,137 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
+2025-12-29 16:16:55,944 - src.agent - INFO - Scraped 103 bankruptcy records
+2025-12-29 16:16:55,946 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2025-12-29 16:16:59,424 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:00,537 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:01,613 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:02,687 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:03,770 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:04,844 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:05,926 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:07,000 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:08,080 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:09,159 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:10,580 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:11,651 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:12,729 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:13,803 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:14,883 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:15,957 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:17,036 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:18,129 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:19,205 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:20,281 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:21,357 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:22,433 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:23,503 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:24,750 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:25,862 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:26,934 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:28,000 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:29,062 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:30,139 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:31,211 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:32,288 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:33,368 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:34,451 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:35,532 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:36,602 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:37,686 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:38,768 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:39,848 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:40,916 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:42,000 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:43,077 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:44,430 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:45,514 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:46,589 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:47,662 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:48,729 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:49,805 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:50,889 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:51,969 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:53,046 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:54,120 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:55,196 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:56,273 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:57,350 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:58,431 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:17:59,511 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:00,583 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:01,657 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:02,733 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:04,030 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:05,105 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:06,180 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:07,279 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:08,385 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:09,458 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:10,524 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:11,587 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:12,681 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:13,754 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:14,833 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:15,911 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:16,990 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:18,069 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:19,145 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:20,231 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:21,305 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:22,442 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:23,518 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:24,593 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:25,668 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:26,741 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:27,823 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:28,901 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:29,986 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:31,055 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:32,129 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:33,202 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:34,288 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:35,432 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:36,498 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:37,564 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:38,639 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:39,720 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:40,795 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:41,866 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:42,943 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:44,023 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:45,091 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:46,168 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:47,241 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:48,354 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:49,436 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:50,508 - src.lawyer_enrichment - WARNING - Could not find search input field
+2025-12-29 16:18:50,565 - src.filter - INFO - Filtered 103 records -> 103 matches
+2025-12-29 16:18:50,566 - src.agent - INFO - Filtered to 103 matching records
+2025-12-29 16:18:50,679 - src.agent - INFO - Stored 103 records in database
+2025-12-29 16:18:50,684 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251229_161850.json and data/exports/bankruptcies_2025_12_20251229_161850.csv
+2025-12-29 16:18:50,685 - src.agent - INFO - Monthly report completed: 103 found, 103 matched
+2025-12-29 16:28:25,025 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-29 16:28:25,026 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-29 16:28:25,936 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-29 16:28:30,854 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-29 16:28:30,873 - src.aggregator_scraper - DEBUG - Added: Visvall bilteknik AB from Allabolag.se
+2025-12-29 16:28:30,876 - src.aggregator_scraper - DEBUG - Added: The Brighthouse AB from Allabolag.se
+2025-12-29 16:28:30,880 - src.aggregator_scraper - DEBUG - Added: Söderhamn Sportcenter AB from Allabolag.se
+2025-12-29 16:28:30,883 - src.aggregator_scraper - DEBUG - Added: Storno Logg AB from Allabolag.se
+2025-12-29 16:28:30,886 - src.aggregator_scraper - DEBUG - Added: Som Butik AB from Allabolag.se
+2025-12-29 16:28:30,889 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Projekt AB from Allabolag.se
+2025-12-29 16:28:30,892 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Holding 2 AB from Allabolag.se
+2025-12-29 16:28:30,894 - src.aggregator_scraper - DEBUG - Added: Salamanca in Sweden AB from Allabolag.se
+2025-12-29 16:28:30,897 - src.aggregator_scraper - DEBUG - Added: SOLIRO AB from Allabolag.se
+2025-12-29 16:28:30,900 - src.aggregator_scraper - DEBUG - Added: RUS pizzeria AB from Allabolag.se
+2025-12-29 16:28:31,298 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-29 16:28:36,149 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2025-12-29 16:28:36,171 - src.aggregator_scraper - DEBUG - Added: QVICK's MINIGRÄV Handelsbolag from Konkurslistan.se
+2025-12-29 16:28:36,175 - src.aggregator_scraper - DEBUG - Added: Charkeriet i Huskvarna AB from Konkurslistan.se
+2025-12-29 16:28:36,183 - src.aggregator_scraper - DEBUG - Added: Aphatech AB from Konkurslistan.se
+2025-12-29 16:28:36,187 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Holding 2 AB
+2025-12-29 16:28:36,189 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Projekt AB
+2025-12-29 16:28:36,192 - src.aggregator_scraper - DEBUG - Added: Dan Hall Holding AB from Konkurslistan.se
+2025-12-29 16:28:36,194 - src.aggregator_scraper - DEBUG - Merged: Storno Logg AB
+2025-12-29 16:28:36,199 - src.aggregator_scraper - DEBUG - Added: Af bilar & bilverkstad AB from Konkurslistan.se
+2025-12-29 16:28:36,201 - src.aggregator_scraper - DEBUG - Added: PINTERI AB from Konkurslistan.se
+2025-12-29 16:28:36,204 - src.aggregator_scraper - DEBUG - Added: Gramsi AB from Konkurslistan.se
+2025-12-29 16:28:36,206 - src.aggregator_scraper - DEBUG - Added: Kattvikskajen Schweizeri & Stenugnsbageri AB from Konkurslistan.se
+2025-12-29 16:28:36,208 - src.aggregator_scraper - DEBUG - Added: Attefallspecialisten Sverige AB from Konkurslistan.se
+2025-12-29 16:28:36,211 - src.aggregator_scraper - DEBUG - Added: Cross west transport AB from Konkurslistan.se
+2025-12-29 16:28:36,214 - src.aggregator_scraper - DEBUG - Merged: Som Butik AB
+2025-12-29 16:28:36,217 - src.aggregator_scraper - DEBUG - Merged: SOLIRO AB
+2025-12-29 16:28:36,220 - src.aggregator_scraper - DEBUG - Merged: Salamanca in Sweden AB
+2025-12-29 16:28:36,222 - src.aggregator_scraper - DEBUG - Added: Nordic Worx AB from Konkurslistan.se
+2025-12-29 16:28:36,224 - src.aggregator_scraper - DEBUG - Added: Capital Exchange Markets (CEM) AB from Konkurslistan.se
+2025-12-29 16:28:36,226 - src.aggregator_scraper - DEBUG - Added: BRESHKE BYGG AB from Konkurslistan.se
+2025-12-29 16:28:36,230 - src.aggregator_scraper - DEBUG - Merged: The Brighthouse AB
+2025-12-29 16:28:36,234 - src.aggregator_scraper - DEBUG - Added: Mats Kilander Ekonomi AB from Konkurslistan.se
+2025-12-29 16:28:36,237 - src.aggregator_scraper - DEBUG - Added: Besiktningsportalen Stockholm AB from Konkurslistan.se
+2025-12-29 16:28:36,240 - src.aggregator_scraper - DEBUG - Added: European Quality Transport & Logistics AB from Konkurslistan.se
+2025-12-29 16:28:36,242 - src.aggregator_scraper - DEBUG - Added: Tranarö marin AB from Konkurslistan.se
+2025-12-29 16:28:36,244 - src.aggregator_scraper - DEBUG - Added: COPMOD AB from Konkurslistan.se
+2025-12-29 16:28:36,248 - src.aggregator_scraper - DEBUG - Added: Oriel Stockholm AB from Konkurslistan.se
+2025-12-29 16:28:36,251 - src.aggregator_scraper - DEBUG - Added: Ski The Planet AB from Konkurslistan.se
+2025-12-29 16:28:36,253 - src.aggregator_scraper - DEBUG - Added: Vero Transport AB from Konkurslistan.se
+2025-12-29 16:28:36,256 - src.aggregator_scraper - DEBUG - Added: Mats Lågprishandel AB from Konkurslistan.se
+2025-12-29 16:28:36,259 - src.aggregator_scraper - DEBUG - Added: Harrion AB from Konkurslistan.se
+2025-12-29 16:28:36,261 - src.aggregator_scraper - DEBUG - Added: HSB Bostadsrättsförening Margaretavägen from Konkurslistan.se
+2025-12-29 16:28:36,265 - src.aggregator_scraper - DEBUG - Added: Equality Development Center West Sweden, EDCS EK FÖR from Konkurslistan.se
+2025-12-29 16:28:36,268 - src.aggregator_scraper - DEBUG - Added: Hälsans Hus i Lund, Ekonomisk förening from Konkurslistan.se
+2025-12-29 16:28:36,270 - src.aggregator_scraper - DEBUG - Added: Parapu AB from Konkurslistan.se
+2025-12-29 16:28:36,272 - src.aggregator_scraper - DEBUG - Added: Xertify AB from Konkurslistan.se
+2025-12-29 16:28:36,274 - src.aggregator_scraper - DEBUG - Added: Osterman Fastighet AB from Konkurslistan.se
+2025-12-29 16:28:36,277 - src.aggregator_scraper - DEBUG - Added: Brismo SemiColon AB from Konkurslistan.se
+2025-12-29 16:28:36,279 - src.aggregator_scraper - DEBUG - Added: MeKKon industrisupport Laxå AB from Konkurslistan.se
+2025-12-29 16:28:36,282 - src.aggregator_scraper - DEBUG - Added: Alma Grill AB from Konkurslistan.se
+2025-12-29 16:28:36,285 - src.aggregator_scraper - DEBUG - Added: Goggo Godis AB from Konkurslistan.se
+2025-12-29 16:28:36,287 - src.aggregator_scraper - DEBUG - Added: Zeepay JV AB from Konkurslistan.se
+2025-12-29 16:28:36,289 - src.aggregator_scraper - DEBUG - Added: ZABUX B.T.S AB from Konkurslistan.se
+2025-12-29 16:28:36,291 - src.aggregator_scraper - DEBUG - Added: Ruts Fastighet AB from Konkurslistan.se
+2025-12-29 16:28:36,293 - src.aggregator_scraper - DEBUG - Added: Vanadis Tvätt & rekond AB from Konkurslistan.se
+2025-12-29 16:28:36,296 - src.aggregator_scraper - DEBUG - Added: Gyllenhus AB from Konkurslistan.se
+2025-12-29 16:28:36,300 - src.aggregator_scraper - DEBUG - Added: Thai Town Örnsköldsvik AB from Konkurslistan.se
+2025-12-29 16:28:36,302 - src.aggregator_scraper - DEBUG - Added: GAR Pension AB from Konkurslistan.se
+2025-12-29 16:28:36,304 - src.aggregator_scraper - DEBUG - Added: Springy AB from Konkurslistan.se
+2025-12-29 16:28:36,306 - src.aggregator_scraper - DEBUG - Added: Hair and beauty i Luleå AB from Konkurslistan.se
+2025-12-29 16:28:36,308 - src.aggregator_scraper - DEBUG - Added: Kipuwex AB from Konkurslistan.se
+2025-12-29 16:28:36,310 - src.aggregator_scraper - DEBUG - Added: KD Tech AB from Konkurslistan.se
+2025-12-29 16:28:36,312 - src.aggregator_scraper - DEBUG - Added: GRAB Entreprenad AB from Konkurslistan.se
+2025-12-29 16:28:36,315 - src.aggregator_scraper - DEBUG - Added: N-TRANS AB from Konkurslistan.se
+2025-12-29 16:28:36,317 - src.aggregator_scraper - DEBUG - Added: Klimat & Fastighetsteknik i Trosa AB from Konkurslistan.se
+2025-12-29 16:28:36,319 - src.aggregator_scraper - DEBUG - Added: Aktiebolaget Borlänge Biluthyrning from Konkurslistan.se
+2025-12-29 16:28:36,322 - src.aggregator_scraper - DEBUG - Added: North Wind Aviation AB from Konkurslistan.se
+2025-12-29 16:28:36,323 - src.aggregator_scraper - DEBUG - Added: Solgrann & Company AB from Konkurslistan.se
+2025-12-29 16:28:36,326 - src.aggregator_scraper - DEBUG - Added: AR Dekor AB from Konkurslistan.se
+2025-12-29 16:28:36,328 - src.aggregator_scraper - DEBUG - Added: AJK Flyttfirma AB from Konkurslistan.se
+2025-12-29 16:28:36,329 - src.aggregator_scraper - DEBUG - Added: Crispy Kebab i Ljungby AB from Konkurslistan.se
+2025-12-29 16:28:36,332 - src.aggregator_scraper - DEBUG - Added: Musculus i Norr AB from Konkurslistan.se
+2025-12-29 16:28:36,335 - src.aggregator_scraper - DEBUG - Added: AB Svensk Hemvård from Konkurslistan.se
+2025-12-29 16:28:36,338 - src.aggregator_scraper - DEBUG - Added: NS MASKIN&TRANSPORT AB from Konkurslistan.se
+2025-12-29 16:28:36,340 - src.aggregator_scraper - DEBUG - Added: UBEK AB from Konkurslistan.se
+2025-12-29 16:28:36,342 - src.aggregator_scraper - DEBUG - Added: Hedh-Escalante Chocolatier AB from Konkurslistan.se
+2025-12-29 16:28:36,344 - src.aggregator_scraper - DEBUG - Added: Thermo Isolering i Karlstad AB from Konkurslistan.se
+2025-12-29 16:28:36,347 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Åstol 2 from Konkurslistan.se
+2025-12-29 16:28:36,349 - src.aggregator_scraper - DEBUG - Added: Payless Colore Europe AB from Konkurslistan.se
+2025-12-29 16:28:36,351 - src.aggregator_scraper - DEBUG - Added: Skeningarna Utveckling AB from Konkurslistan.se
+2025-12-29 16:28:36,353 - src.aggregator_scraper - DEBUG - Added: Poozesh Frisör AB from Konkurslistan.se
+2025-12-29 16:28:36,355 - src.aggregator_scraper - DEBUG - Added: Nutri Administration Stockholm AB from Konkurslistan.se
+2025-12-29 16:28:36,357 - src.aggregator_scraper - DEBUG - Added: Orient Livs i Gislaved AB from Konkurslistan.se
+2025-12-29 16:28:36,359 - src.aggregator_scraper - DEBUG - Added: Tamd Fastighetsförvaltning AB from Konkurslistan.se
+2025-12-29 16:28:36,361 - src.aggregator_scraper - DEBUG - Added: Viriren AB from Konkurslistan.se
+2025-12-29 16:28:36,363 - src.aggregator_scraper - DEBUG - Added: Gemlinge Fastigheter AB from Konkurslistan.se
+2025-12-29 16:28:36,365 - src.aggregator_scraper - DEBUG - Added: Artha AB from Konkurslistan.se
+2025-12-29 16:28:36,367 - src.aggregator_scraper - DEBUG - Added: Maglarp Consulting AB from Konkurslistan.se
+2025-12-29 16:28:36,369 - src.aggregator_scraper - DEBUG - Added: eriks lilla värld AB from Konkurslistan.se
+2025-12-29 16:28:36,371 - src.aggregator_scraper - DEBUG - Added: Aslan KTS AB from Konkurslistan.se
+2025-12-29 16:28:36,373 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Kjellbergsgatan 3 from Konkurslistan.se
+2025-12-29 16:28:36,375 - src.aggregator_scraper - DEBUG - Added: Planet Kids Nursery School, Ek. för. from Konkurslistan.se
+2025-12-29 16:28:36,376 - src.aggregator_scraper - DEBUG - Added: Många Bäckar Små AB from Konkurslistan.se
+2025-12-29 16:28:36,378 - src.aggregator_scraper - DEBUG - Added: PRBTVA AB from Konkurslistan.se
+2025-12-29 16:28:36,380 - src.aggregator_scraper - DEBUG - Added: Sound Art Sweden AB from Konkurslistan.se
+2025-12-29 16:28:36,403 - src.aggregator_scraper - DEBUG - Added: Glada Köpings Livs AB from Konkurslistan.se
+2025-12-29 16:28:36,436 - src.aggregator_scraper - DEBUG - Added: Företag Retreats Sweden AB from Konkurslistan.se
+2025-12-29 16:28:36,444 - src.aggregator_scraper - DEBUG - Added: Quantum Tunnelling Software Sweden AB from Konkurslistan.se
+2025-12-29 16:28:36,450 - src.aggregator_scraper - DEBUG - Added: Prima Kött i Köping AB from Konkurslistan.se
+2025-12-29 16:28:36,453 - src.aggregator_scraper - DEBUG - Added: Stark Hand Bygg AB from Konkurslistan.se
+2025-12-29 16:28:36,455 - src.aggregator_scraper - DEBUG - Added: AB Målerikonsult Mats Bladh from Konkurslistan.se
+2025-12-29 16:28:36,457 - src.aggregator_scraper - DEBUG - Added: Dug Foodtech AB (publ) from Konkurslistan.se
+2025-12-29 16:28:36,459 - src.aggregator_scraper - DEBUG - Added: RS joursvets AB from Konkurslistan.se
+2025-12-29 16:28:36,461 - src.aggregator_scraper - DEBUG - Added: Nils Olofsson Konsult Aktiebolag from Konkurslistan.se
+2025-12-29 16:28:36,463 - src.aggregator_scraper - DEBUG - Added: Junogatans Bilvård AB from Konkurslistan.se
+2025-12-29 16:28:36,466 - src.aggregator_scraper - DEBUG - Added: VenDev Aktiebolag from Konkurslistan.se
+2025-12-29 16:28:36,469 - src.aggregator_scraper - DEBUG - Added: Röste Holding AB from Konkurslistan.se
+2025-12-29 16:28:36,471 - src.aggregator_scraper - DEBUG - Added: DUNWEL AB from Konkurslistan.se
+2025-12-29 16:28:36,473 - src.aggregator_scraper - DEBUG - Added: PH Heavy Solutions AB from Konkurslistan.se
+2025-12-29 16:28:36,475 - src.aggregator_scraper - DEBUG - Added: A-N Maskindepån & Entreprenad AB from Konkurslistan.se
+2025-12-29 16:28:36,476 - src.aggregator_scraper - DEBUG - Added: Röste Bostäder AB from Konkurslistan.se
+2025-12-29 16:28:36,853 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-29 16:28:40,864 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-29 16:28:40,884 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
+2025-12-29 16:28:40,884 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
