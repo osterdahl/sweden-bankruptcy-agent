@@ -1,14 +1,17 @@
 """
-Lawyer contact information enrichment from Bolagsverket POIT system.
+Lawyer contact information enrichment from law firm websites.
 
-Scrapes lawyer (konkursförvaltare) contact details from official
-Swedish Companies Registration Office (Bolagsverket) bankruptcy announcements.
+Searches for lawyer contact details by:
+1. Finding the law firm's website
+2. Locating the lawyer's profile page
+3. Extracting email and phone number from their contact information
 """
 import asyncio
 import logging
 import re
 from typing import Optional, Tuple
 from datetime import datetime
+from urllib.parse import quote_plus, urljoin
 
 from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
 
@@ -17,16 +20,18 @@ from .models import BankruptcyRecord, BankruptcyAdministrator
 logger = logging.getLogger(__name__)
 
 
-class BolagsverketLawyerEnricher:
+class LawyerContactEnricher:
     """
-    Enriches bankruptcy records with lawyer contact information from Bolagsverket.
+    Enriches bankruptcy records with lawyer contact information from law firm websites.
 
-    Searches the POIT system for bankruptcy announcements (konkursbeslut) and
-    extracts administrator contact details.
+    Strategy:
+    1. Uses lawyer name and law firm from existing bankruptcy record
+    2. Searches for the law firm's website using Google
+    3. Finds the lawyer's profile on the firm's website
+    4. Extracts email and phone number from their profile
     """
 
-    BASE_URL = "https://poit.bolagsverket.se"
-    SEARCH_URL = f"{BASE_URL}/poit-app/sok"
+    GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
 
     def __init__(
         self,
@@ -55,7 +60,7 @@ class BolagsverketLawyerEnricher:
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
         self.page = await context.new_page()
-        logger.debug("Bolagsverket browser initialized")
+        logger.debug("Lawyer enrichment browser initialized")
 
     async def close(self):
         """Close browser."""
@@ -63,7 +68,7 @@ class BolagsverketLawyerEnricher:
             await self.page.close()
         if self.browser:
             await self.browser.close()
-        logger.debug("Bolagsverket browser closed")
+        logger.debug("Lawyer enrichment browser closed")
 
     async def enrich_record(self, record: BankruptcyRecord) -> BankruptcyRecord:
         """
@@ -75,126 +80,245 @@ class BolagsverketLawyerEnricher:
         Returns:
             Updated record with lawyer email and phone (if found)
         """
-        org_number = record.company.org_number
-        logger.debug(f"Enriching lawyer info for {org_number}")
+        if not record.administrator:
+            logger.debug(f"No administrator for {record.company.name}, skipping enrichment")
+            return record
+
+        lawyer_name = record.administrator.name
+        law_firm = record.administrator.law_firm
+
+        if not lawyer_name or not law_firm:
+            logger.debug(f"Missing lawyer name or firm for {record.company.name}, skipping")
+            return record
+
+        logger.debug(f"Enriching contact info for {lawyer_name} at {law_firm}")
 
         try:
-            lawyer_info = await self._fetch_lawyer_contact(org_number)
+            # Search for lawyer contact information
+            email, phone = await self._find_lawyer_contact(lawyer_name, law_firm)
 
-            if lawyer_info:
-                email, phone = lawyer_info
-
-                # Update existing administrator or create new one
-                if record.administrator:
-                    if email and not record.administrator.email:
-                        record.administrator.email = email
-                        logger.info(f"Added email {email} for {record.administrator.name}")
-                    if phone and not record.administrator.phone:
-                        record.administrator.phone = phone
-                        logger.info(f"Added phone {phone} for {record.administrator.name}")
-                else:
-                    # If we found contact info but no administrator, create placeholder
-                    if email or phone:
-                        logger.warning(f"Found contact info but no administrator name for {org_number}")
+            if email or phone:
+                # Update administrator contact info (only if not already set)
+                if email and not record.administrator.email:
+                    record.administrator.email = email
+                    logger.info(f"✓ Found email for {lawyer_name}: {email}")
+                if phone and not record.administrator.phone:
+                    record.administrator.phone = phone
+                    logger.info(f"✓ Found phone for {lawyer_name}: {phone}")
             else:
-                logger.debug(f"No lawyer contact info found for {org_number}")
+                logger.debug(f"No contact info found for {lawyer_name} at {law_firm}")
 
         except Exception as e:
-            logger.warning(f"Failed to enrich lawyer info for {org_number}: {e}")
+            logger.warning(f"Failed to enrich {lawyer_name}: {e}")
 
         return record
 
-    async def _fetch_lawyer_contact(self, org_number: str) -> Optional[Tuple[Optional[str], Optional[str]]]:
+    async def _find_lawyer_contact(
+        self,
+        lawyer_name: str,
+        law_firm: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
-        Fetch lawyer email and phone from Bolagsverket POIT.
+        Find lawyer contact information by searching law firm website.
 
         Args:
-            org_number: Swedish organization number (NNNNNN-NNNN)
+            lawyer_name: Name of the lawyer (e.g., "Anna Svensson")
+            law_firm: Name of the law firm (e.g., "Mannheimer Swartling")
 
         Returns:
-            Tuple of (email, phone) or None if not found
+            Tuple of (email, phone) or (None, None) if not found
         """
         if not self.page:
             await self.start()
 
         try:
-            # Navigate to search page
-            await self.page.goto(self.SEARCH_URL, timeout=self.timeout)
+            # Step 1: Find the law firm's website
+            firm_url = await self._find_law_firm_website(law_firm)
+            if not firm_url:
+                logger.debug(f"Could not find website for {law_firm}")
+                return (None, None)
+
+            logger.debug(f"Found law firm website: {firm_url}")
+
+            # Step 2: Search for the lawyer on the firm's website
+            lawyer_page_url = await self._find_lawyer_page(firm_url, lawyer_name)
+            if not lawyer_page_url:
+                logger.debug(f"Could not find profile page for {lawyer_name}")
+                return (None, None)
+
+            logger.debug(f"Found lawyer profile: {lawyer_page_url}")
+
+            # Step 3: Extract contact information from the lawyer's page
+            email, phone = await self._extract_contact_from_page(lawyer_page_url, lawyer_name)
+
+            return (email, phone)
+
+        except Exception as e:
+            logger.error(f"Error finding contact for {lawyer_name}: {e}")
+            return (None, None)
+
+    async def _find_law_firm_website(self, law_firm: str) -> Optional[str]:
+        """
+        Find the law firm's website URL using Google search.
+
+        Args:
+            law_firm: Name of the law firm
+
+        Returns:
+            URL of the law firm's website, or None if not found
+        """
+        try:
+            # Search query: law firm name + "advokatbyrå" or "law firm"
+            search_query = f'"{law_firm}" advokatbyrå Sverige'
+            search_url = f"{self.GOOGLE_SEARCH_URL}{quote_plus(search_query)}"
+
+            logger.debug(f"Searching for: {search_query}")
+            await self.page.goto(search_url, timeout=self.timeout)
             await asyncio.sleep(self.request_delay)
 
-            # Clean org number (remove dash)
-            clean_org = org_number.replace("-", "").replace(" ", "")
+            # Accept cookies if popup appears
+            try:
+                cookie_button = await self.page.query_selector('button:has-text("Accept"), button:has-text("Acceptera"), button:has-text("Godkänn")')
+                if cookie_button:
+                    await cookie_button.click()
+                    await asyncio.sleep(0.5)
+            except:
+                pass
 
-            # Enter organization number in search field
-            # The search field typically has name="orgnr" or similar
-            search_input = await self.page.query_selector('input[name*="org"], input[id*="org"], input[placeholder*="org"]')
-            if not search_input:
-                # Try more generic search
-                search_input = await self.page.query_selector('input[type="text"]')
+            # Extract first search result URL
+            # Google search results typically have links in <a> tags with specific classes
+            search_results = await self.page.query_selector_all('a[href]')
 
-            if search_input:
-                await search_input.fill(clean_org)
-                logger.debug(f"Entered org number: {clean_org}")
-            else:
-                logger.warning("Could not find search input field")
-                return None
+            for result in search_results[:15]:  # Check first 15 results
+                href = await result.get_attribute('href')
+                if href and href.startswith('http') and not any(skip in href for skip in ['google.', 'youtube.', 'facebook.', 'linkedin.', 'wikipedia.']):
+                    # Check if this looks like a law firm website
+                    firm_indicators = ['.se', '.com', 'advokat', law_firm.lower().replace(' ', '')]
+                    if any(indicator in href.lower() for indicator in firm_indicators):
+                        logger.debug(f"Found potential law firm URL: {href}")
+                        return href
 
-            # Submit search (look for search button)
-            search_button = await self.page.query_selector('button[type="submit"], input[type="submit"], button:has-text("Sök")')
-            if search_button:
-                await search_button.click()
-                logger.debug("Clicked search button")
-            else:
-                # Try pressing Enter
-                await search_input.press("Enter")
-                logger.debug("Pressed Enter to search")
+            logger.debug(f"No law firm website found for {law_firm}")
+            return None
 
-            # Wait for results to load
-            await asyncio.sleep(self.request_delay * 2)
+        except Exception as e:
+            logger.error(f"Error finding law firm website: {e}")
+            return None
 
-            # Look for "konkursbeslut" announcements
-            # This varies by site structure, but typically they list announcements by type
+    async def _find_lawyer_page(self, firm_url: str, lawyer_name: str) -> Optional[str]:
+        """
+        Find the lawyer's profile page on the law firm's website.
+
+        Args:
+            firm_url: URL of the law firm's website
+            lawyer_name: Name of the lawyer to find
+
+        Returns:
+            URL of the lawyer's profile page, or None if not found
+        """
+        try:
+            # Navigate to the law firm's website
+            await self.page.goto(firm_url, timeout=self.timeout)
+            await asyncio.sleep(self.request_delay)
+
+            # Accept cookies if they appear
+            try:
+                cookie_button = await self.page.query_selector('button:has-text("Accept"), button:has-text("Acceptera"), button:has-text("Godkänn")')
+                if cookie_button:
+                    await cookie_button.click()
+                    await asyncio.sleep(0.5)
+            except:
+                pass
+
+            # Try to find a search function or people/team directory
             page_content = await self.page.content()
 
-            # Find konkursbeslut links or sections
-            konkursbeslut_links = await self.page.query_selector_all(
-                'a:has-text("Konkursbeslut"), a:has-text("konkurs"), '
-                '[class*="konkursbeslut"], [id*="konkursbeslut"]'
+            # Common patterns for lawyer/people sections
+            people_links = await self.page.query_selector_all(
+                'a[href*="medarbetare"], a[href*="people"], a[href*="team"], '
+                'a[href*="advokat"], a[href*="lawyer"], a:has-text("Medarbetare"), '
+                'a:has-text("Team"), a:has-text("People"), a:has-text("Advokater")'
             )
 
-            if not konkursbeslut_links:
-                # Try to find in the results text
-                logger.debug(f"No konkursbeslut links found in search results for {org_number}")
-                # Look for "Typ av kungörelse" text
-                if "konkursbeslut" in page_content.lower():
-                    logger.debug("Found konkursbeslut mention in page content")
-                else:
-                    logger.debug("No konkursbeslut found in page content")
-                    return None
+            if people_links and len(people_links) > 0:
+                # Click on people/team section
+                try:
+                    await people_links[0].click()
+                    await asyncio.sleep(self.request_delay)
+                    page_content = await self.page.content()
+                except:
+                    pass  # Page might be single-page, continue
 
-            # Click first konkursbeslut link
-            if konkursbeslut_links:
-                await konkursbeslut_links[0].click()
-                await asyncio.sleep(self.request_delay)
-                page_content = await self.page.content()
+            # Search for the lawyer's name on the page
+            name_parts = lawyer_name.split()
+            first_name = name_parts[0] if name_parts else ""
+            last_name = name_parts[-1] if len(name_parts) > 1 else ""
 
-            # Extract email and phone from the page
+            # Look for links containing the lawyer's name
+            all_links = await self.page.query_selector_all('a[href]')
+
+            for link in all_links:
+                try:
+                    link_text = await link.text_content()
+                    href = await link.get_attribute('href')
+
+                    if link_text and href:
+                        # Check if link text contains lawyer's name
+                        if (first_name.lower() in link_text.lower() and last_name.lower() in link_text.lower()):
+                            # Make absolute URL if needed
+                            if href.startswith('/'):
+                                href = urljoin(firm_url, href)
+                            elif not href.startswith('http'):
+                                continue
+
+                            logger.debug(f"Found lawyer link: {href}")
+                            return href
+                except:
+                    continue
+
+            # If not found in links, search in page content
+            if first_name.lower() in page_content.lower() and last_name.lower() in page_content.lower():
+                # Lawyer is mentioned on this page, use current URL
+                logger.debug(f"Lawyer mentioned on page: {self.page.url}")
+                return self.page.url
+
+            logger.debug(f"Lawyer {lawyer_name} not found on {firm_url}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error finding lawyer page: {e}")
+            return None
+
+    async def _extract_contact_from_page(
+        self,
+        page_url: str,
+        lawyer_name: str
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Extract email and phone from the lawyer's profile page.
+
+        Args:
+            page_url: URL of the lawyer's profile page
+            lawyer_name: Name of the lawyer (for verification)
+
+        Returns:
+            Tuple of (email, phone)
+        """
+        try:
+            await self.page.goto(page_url, timeout=self.timeout)
+            await asyncio.sleep(self.request_delay)
+
+            page_content = await self.page.content()
+
+            # Extract email and phone
             email = self._extract_email(page_content)
             phone = self._extract_phone(page_content)
 
-            if email or phone:
-                logger.info(f"Found lawyer contact for {org_number}: email={email}, phone={phone}")
-                return (email, phone)
-            else:
-                logger.debug(f"No contact information found for {org_number}")
-                return None
+            return (email, phone)
 
-        except PlaywrightTimeout:
-            logger.warning(f"Timeout while fetching lawyer info for {org_number}")
-            return None
         except Exception as e:
-            logger.error(f"Error fetching lawyer info for {org_number}: {e}")
-            return None
+            logger.error(f"Error extracting contact from page: {e}")
+            return (None, None)
 
     def _extract_email(self, html_content: str) -> Optional[str]:
         """Extract email address from HTML content."""
@@ -206,7 +330,7 @@ class BolagsverketLawyerEnricher:
             # Filter out common non-lawyer emails
             for email in matches:
                 email_lower = email.lower()
-                if not any(skip in email_lower for skip in ['noreply', 'example', 'test']):
+                if not any(skip in email_lower for skip in ['noreply', 'example', 'test', 'info@', 'kontakt@']):
                     return email
 
         return None
@@ -251,8 +375,9 @@ class BolagsverketLawyerEnricher:
 
         async def enrich_with_limit(record):
             async with semaphore:
-                return await self.enrich_record(record)
+                result = await self.enrich_record(record)
                 await asyncio.sleep(self.request_delay)  # Be polite
+                return result
 
         # Start browser once for all requests
         await self.start()
@@ -273,3 +398,7 @@ class BolagsverketLawyerEnricher:
             return results
         finally:
             await self.close()
+
+
+# Backward compatibility alias
+BolagsverketLawyerEnricher = LawyerContactEnricher
