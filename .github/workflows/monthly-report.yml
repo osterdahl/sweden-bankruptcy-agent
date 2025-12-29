@@ -1,23 +1,29 @@
 name: Monthly Bankruptcy Report
 
+# 🤖 FULLY AUTONOMOUS WORKFLOW
+# Runs automatically on the 1st of each month at 6 AM UTC
+# Intelligently selects which month to process based on current date
+# No manual intervention required!
+
 on:
-  # Run at 6 AM UTC on the 1st of every month
+  # 🗓️ Automatic monthly execution
   schedule:
-    - cron: '0 6 1 * *'
-  
-  # Allow manual trigger
+    - cron: '0 6 1 * *'  # 6 AM UTC on the 1st of every month
+
+  # 🔧 Optional manual trigger (for testing or reruns)
+  # Leave inputs blank for automatic date detection
   workflow_dispatch:
     inputs:
       year:
-        description: 'Year to process'
+        description: 'Year to process (leave blank for auto)'
         required: false
         default: ''
       month:
-        description: 'Month to process (1-12)'
+        description: 'Month to process 1-12 (leave blank for auto)'
         required: false
         default: ''
       skip_email:
-        description: 'Skip sending email'
+        description: 'Skip sending email report'
         required: false
         default: 'false'
         type: boolean
@@ -47,22 +53,40 @@ jobs:
           playwright install chromium
           playwright install-deps
       
-      - name: Determine date parameters
+      - name: Determine date parameters (Smart Auto-Detection)
         id: date
         run: |
-          if [ -n "${{ github.event.inputs.year }}" ]; then
-            echo "year=${{ github.event.inputs.year }}" >> $GITHUB_OUTPUT
+          # Smart date detection for autonomous operation
+          if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.month }}" ]; then
+            # Manual override provided
+            YEAR="${{ github.event.inputs.year }}"
+            MONTH="${{ github.event.inputs.month }}"
+            echo "Using manual inputs: $YEAR-$MONTH"
           else
-            echo "year=$(date +%Y)" >> $GITHUB_OUTPUT
+            # Automatic mode - intelligent date selection
+            CURRENT_DAY=$(date +%d)
+            CURRENT_MONTH=$(date +%m | sed 's/^0//')
+            CURRENT_YEAR=$(date +%Y)
+
+            # If we're in the first 3 days of the month, process PREVIOUS month
+            # (bankruptcies from last month are more complete)
+            # Otherwise, process CURRENT month
+            if [ "$CURRENT_DAY" -le 3 ]; then
+              echo "Running on day $CURRENT_DAY - processing PREVIOUS month"
+              # Calculate previous month
+              PREV_DATE=$(date -d "1 month ago" +%Y-%m)
+              YEAR=$(echo $PREV_DATE | cut -d'-' -f1)
+              MONTH=$(echo $PREV_DATE | cut -d'-' -f2 | sed 's/^0//')
+            else
+              echo "Running on day $CURRENT_DAY - processing CURRENT month"
+              YEAR=$CURRENT_YEAR
+              MONTH=$CURRENT_MONTH
+            fi
           fi
-          
-          if [ -n "${{ github.event.inputs.month }}" ]; then
-            echo "month=${{ github.event.inputs.month }}" >> $GITHUB_OUTPUT
-          else
-            # Default to previous month (since we run on 1st of month)
-            PREV_MONTH=$(date -d "1 month ago" +%m | sed 's/^0//')
-            echo "month=$PREV_MONTH" >> $GITHUB_OUTPUT
-          fi
+
+          echo "year=$YEAR" >> $GITHUB_OUTPUT
+          echo "month=$MONTH" >> $GITHUB_OUTPUT
+          echo "📅 Processing period: $YEAR-$(printf %02d $MONTH)"
       
       - name: Run bankruptcy monitor
         env:
@@ -120,15 +144,21 @@ jobs:
       - name: Report summary
         if: always()
         run: |
-          echo "## Bankruptcy Report Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Bankruptcy Report Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Period Processed" >> $GITHUB_STEP_SUMMARY
           echo "- **Year:** ${{ steps.date.outputs.year }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Month:** ${{ steps.date.outputs.month }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+          echo "### Execution Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered:** ${{ github.event_name == 'schedule' && '🤖 Automatic (scheduled)' || '🔧 Manual' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date Selection:** ${{ github.event.inputs.year != '' && 'Manual override' || 'Automatic (smart detection)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
           if [ -f data/exports/*.json ]; then
             RECORD_COUNT=$(cat data/exports/*.json | python -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
             echo "- **Records exported:** $RECORD_COUNT" >> $GITHUB_STEP_SUMMARY
           fi
 

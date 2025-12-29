@@ -14,7 +14,9 @@ An automated system that monitors Swedish corporate bankruptcies from multiple a
 
 ## Quick Start
 
-### Option 1: GitHub Actions (Free, Recommended)
+### Option 1: GitHub Actions (Free, Recommended) 🤖
+
+**100% Autonomous - Zero Manual Intervention!**
 
 1. Fork this repository
 2. Go to **Settings → Secrets and variables → Actions**
@@ -29,7 +31,16 @@ An automated system that monitors Swedish corporate bankruptcies from multiple a
 | `FILTER_MIN_REVENUE` | 5000000 |
 
 4. Go to **Actions** tab and enable workflows
-5. Reports run automatically on the 1st of each month!
+5. **That's it!** Reports run automatically every month at 6 AM UTC
+
+**Smart Features:**
+- 🗓️ Auto-detects which month to process (previous or current)
+- 📧 Sends email reports automatically
+- 💾 Saves all data as downloadable artifacts
+- ⚠️ Notifies you if something fails
+- 🆓 Runs free on GitHub Actions
+
+📖 [Full autonomous setup guide →](GITHUB_ACTIONS_AUTONOMOUS.md)
 
 ### Option 2: Local/Server
 
