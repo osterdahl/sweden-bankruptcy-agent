@@ -245,10 +245,12 @@ print(f'Recipients: {settings.email_config.recipient_emails}')
 ### Typical Resource Usage
 
 - **Duration:** 5-15 minutes per run
-- **Storage:** ~10 MB per month (artifacts)
+- **Storage:** ~10 MB per month (artifacts retained for 90 days)
 - **Network:** Minimal (scraping 3-4 sites)
 
 **Estimated:** Well within free tier limits! 🎉
+
+**Note:** Artifacts are retained for 90 days by default. You can download and archive them locally for longer retention.
 
 ## Security Best Practices
 
@@ -316,7 +318,7 @@ A: Update the secrets in Settings → Secrets → Edit the secret
 A: Run manually multiple times with different month inputs
 
 **Q: How long is data retained?**
-A: Exports: 90 days, Database: 365 days, but you can download and archive
+A: Both exports and database artifacts: 90 days (repository limit). Download and archive locally for longer retention.
 
 ### Getting Help
 

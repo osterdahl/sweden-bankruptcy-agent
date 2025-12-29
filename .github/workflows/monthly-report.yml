@@ -139,7 +139,7 @@ jobs:
         with:
           name: database-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}
           path: data/bankruptcies.db
-          retention-days: 365
+          retention-days: 90  # Changed from 365 to match repository limit
       
       - name: Report summary
         if: always()
