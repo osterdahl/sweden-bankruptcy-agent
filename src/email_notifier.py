@@ -188,8 +188,9 @@ class EmailNotifier:
                 <th>Employees</th>
                 <th>Revenue (SEK)</th>
                 <th>Location</th>
-                <th>Administrator</th>
                 <th>Court</th>
+                <th>Administrator</th>
+                <th>Contact</th>
             </tr>
         </thead>
         <tbody>
@@ -197,7 +198,24 @@ class EmailNotifier:
             for record in records:
                 company = record.company
                 admin = record.administrator
-                
+
+                # Build administrator info
+                admin_info = '<span class="no-data">-</span>'
+                if admin:
+                    admin_info = f'<strong>{self._escape(admin.name)}</strong>'
+                    if admin.law_firm:
+                        admin_info += f'<br><small style="color: #666;">{self._escape(admin.law_firm)}</small>'
+
+                # Build contact info
+                contact_info = '<span class="no-data">-</span>'
+                if admin and (admin.email or admin.phone):
+                    contact_parts = []
+                    if admin.email:
+                        contact_parts.append(f'<a href="mailto:{admin.email}" style="color: #3498db; text-decoration: none;">{self._escape(admin.email)}</a>')
+                    if admin.phone:
+                        contact_parts.append(f'<span style="color: #666;">📞 {self._escape(admin.phone)}</span>')
+                    contact_info = '<br>'.join(contact_parts)
+
                 html += f"""
             <tr>
                 <td>
@@ -208,9 +226,10 @@ class EmailNotifier:
                 <td>{self._escape(company.business_type) if company.business_type else '<span class="no-data">-</span>'}</td>
                 <td class="employees">{company.employees if company.employees else '<span class="no-data">-</span>'}</td>
                 <td class="revenue">{self._format_currency(company.revenue) if company.revenue else '<span class="no-data">-</span>'}</td>
-                <td>{self._escape(company.city or company.region or '-')}</td>
-                <td>{self._escape(admin.name) if admin else '<span class="no-data">-</span>'}{f'<br><small>{self._escape(admin.law_firm)}</small>' if admin and admin.law_firm else ''}</td>
+                <td>{self._escape(company.city or company.region) if (company.city or company.region) else '<span class="no-data">-</span>'}</td>
                 <td>{self._escape(record.court) if record.court else '<span class="no-data">-</span>'}</td>
+                <td>{admin_info}</td>
+                <td style="font-size: 12px;">{contact_info}</td>
             </tr>
 """
             
@@ -259,11 +278,26 @@ Summary:
         
         if records:
             text += "MATCHING BANKRUPTCIES:\n" + "-" * 50 + "\n\n"
-            
+
             for i, record in enumerate(records, 1):
                 company = record.company
                 admin = record.administrator
-                
+
+                # Build administrator text
+                admin_text = 'Unknown'
+                if admin:
+                    admin_text = admin.name
+                    if admin.law_firm:
+                        admin_text += f' ({admin.law_firm})'
+
+                # Build contact info text
+                contact_text = []
+                if admin:
+                    if admin.email:
+                        contact_text.append(f'Email: {admin.email}')
+                    if admin.phone:
+                        contact_text.append(f'Phone: {admin.phone}')
+
                 text += f"""
 {i}. {company.name}
    Org Number: {company.org_number}
@@ -273,9 +307,12 @@ Summary:
    Revenue: {self._format_currency(company.revenue) if company.revenue else 'Unknown'} SEK
    Location: {company.city or company.region or 'Unknown'}
    Court: {record.court or 'Unknown'}
-   Administrator: {admin.name if admin else 'Unknown'}{f' ({admin.law_firm})' if admin and admin.law_firm else ''}
+   Administrator: {admin_text}"""
 
-"""
+                if contact_text:
+                    text += "\n   Contact: " + " | ".join(contact_text)
+
+                text += "\n\n"
         else:
             text += "No bankruptcies matching your criteria this month.\n"
         
