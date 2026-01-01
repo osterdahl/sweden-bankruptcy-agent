@@ -80,15 +80,21 @@ class LawyerContactEnricher:
         Returns:
             Updated record with lawyer email and phone (if found)
         """
+        # Step 1: If no administrator, try to find from POIT
         if not record.administrator:
-            logger.debug(f"No administrator for {record.company.name}, skipping enrichment")
+            logger.debug(f"No administrator for {record.company.name}, trying POIT lookup")
+            await self._enrich_from_poit(record)
+
+        # Step 2: Check if we now have administrator info
+        if not record.administrator:
+            logger.debug(f"No administrator found for {record.company.name}, skipping contact enrichment")
             return record
 
         lawyer_name = record.administrator.name
         law_firm = record.administrator.law_firm
 
-        if not lawyer_name or not law_firm:
-            logger.debug(f"Missing lawyer name or firm for {record.company.name}, skipping")
+        if not lawyer_name:
+            logger.debug(f"Missing lawyer name for {record.company.name}, skipping")
             return record
 
         logger.debug(f"Enriching contact info for {lawyer_name} at {law_firm}")
@@ -355,6 +361,83 @@ class LawyerContactEnricher:
                 return phone
 
         return None
+
+    async def _enrich_from_poit(self, record: BankruptcyRecord):
+        """
+        Try to find administrator information from Bolagsverket POIT.
+
+        POIT (Post- och Inrikes Tidningar) is the official Swedish gazette
+        where bankruptcy announcements are published with administrator info.
+
+        Args:
+            record: Bankruptcy record to enrich
+        """
+        if not record.company.org_number:
+            return
+
+        try:
+            poit_url = "https://poit.bolagsverket.se/poit-app/sok"
+            logger.debug(f"Searching POIT for {record.company.org_number}")
+
+            await self.page.goto(poit_url, wait_until='domcontentloaded', timeout=self.timeout)
+            await asyncio.sleep(1.5)
+
+            # Fill in organization number
+            org_input = await self.page.query_selector('input#orgnr')
+            if org_input:
+                await org_input.fill(record.company.org_number.replace('-', ''))
+
+            # Select "Konkursbeslut" in dropdown
+            select = await self.page.query_selector('select#kungtyp')
+            if select:
+                await select.select_option(value="K")  # K = Konkursbeslut
+
+            # Click search
+            search_btn = await self.page.query_selector('button[type="submit"]')
+            if search_btn:
+                await search_btn.click()
+                await self.page.wait_for_load_state('networkidle', timeout=self.timeout)
+
+            await asyncio.sleep(2)
+
+            # Get page content
+            content = await self.page.inner_text('body')
+
+            # Extract administrator - Swedish bankruptcy announcements format
+            # Common patterns: "Förvaltare: Name, Law Firm" or "Konkursförvaltare advokat Name, Firm"
+            admin_patterns = [
+                r'(?:Konkurs)?[Ff]örvaltare[:\s]+(?:advokat\s+)?([A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\s\-\.]+?)(?:,\s*([A-ZÅÄÖ][^,\n\.]+))?(?:\.|,|\n)',
+                r'Förvaltare[:\s]+([A-ZÅÄÖ][a-zåäö\s\-]+)(?:,\s*([^,\n]+))?',
+            ]
+
+            for pattern in admin_patterns:
+                match = re.search(pattern, content)
+                if match:
+                    admin_name = match.group(1).strip()
+                    law_firm = match.group(2).strip() if match.lastindex >= 2 and match.group(2) else None
+
+                    # Clean up common suffixes
+                    admin_name = re.sub(r',.*$', '', admin_name)  # Remove anything after comma
+
+                    record.administrator = BankruptcyAdministrator(
+                        name=admin_name,
+                        law_firm=law_firm
+                    )
+                    logger.info(f"✓ Found administrator from POIT: {admin_name}" + (f" ({law_firm})" if law_firm else ""))
+
+                    # Also try to extract court if not already set
+                    if not record.court:
+                        court_match = re.search(r'([A-ZÅÄÖ][a-zåäö]+\s+tingsrätt)', content)
+                        if court_match:
+                            record.court = court_match.group(1)
+                            logger.info(f"✓ Found court from POIT: {record.court}")
+
+                    return
+
+            logger.debug(f"No administrator found in POIT for {record.company.name}")
+
+        except Exception as e:
+            logger.debug(f"POIT lookup failed for {record.company.org_number}: {e}")
 
     async def enrich_batch(
         self,

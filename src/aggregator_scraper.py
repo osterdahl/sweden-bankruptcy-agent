@@ -527,25 +527,42 @@ class KonkurslistanScraper(BaseScraper):
         
         # Konkurslistan uses links to /konkurser/{org_number}
         entries = await self.page.query_selector_all('a[href*="/konkurser/"]')
-        
+
         logger.info(f"Found {len(entries)} potential entries on {self.source_name}")
-        
-        seen_orgs = set()
+
+        # First, collect all entry data without navigation
+        entry_data_list = []
         for entry in entries[:150]:
             try:
                 text = await entry.inner_text()
                 href = await entry.get_attribute('href')
-                
+
                 # Skip pagination and non-company links
                 if not href or 'page=' in href or len(text) < 20:
                     continue
-                
+
+                entry_data_list.append((text, href))
+
+            except Exception as e:
+                logger.debug(f"Error collecting entry data: {e}")
+                continue
+
+        # Now process entries (can navigate safely)
+        seen_orgs = set()
+        for text, href in entry_data_list:
+            try:
                 record = self._parse_konkurslistan_entry(text, href)
                 if record and self._matches_period(record, year, month):
                     if record.company.org_number not in seen_orgs:
                         seen_orgs.add(record.company.org_number)
+
+                        # Enrich with detail page data (administrator, court)
+                        detail_url = urljoin(self.BASE_URL, href) if href else None
+                        if detail_url:
+                            await self._enrich_from_detail_page(record, detail_url)
+
                         yield record
-                    
+
             except Exception as e:
                 logger.debug(f"Error parsing entry: {e}")
                 continue
@@ -712,6 +729,93 @@ class KonkurslistanScraper(BaseScraper):
         if month and record.declaration_date.month != month:
             return False
         return True
+
+    async def _enrich_from_detail_page(self, record: BankruptcyRecord, detail_url: str):
+        """
+        Enrich record with data from detail page (administrator, court, etc.).
+
+        Args:
+            record: Bankruptcy record to enrich
+            detail_url: URL of the detail page
+        """
+        try:
+            logger.debug(f"Fetching detail page: {detail_url}")
+            await self.page.goto(detail_url, timeout=self.timeout, wait_until='domcontentloaded')
+            await self.random_delay(0.5, 1.0)
+
+            # Get page content
+            content = await self.page.content()
+            text_content = await self.page.inner_text('body')
+
+            # Extract administrator information
+            # Look for patterns like "Förvaltare:" or "Konkursförvaltare:"
+            admin_patterns = [
+                r'(?:Konkurs)?[Ff]örvaltare[:\s]+([^\n]+)',
+                r'Administrator[:\s]+([^\n]+)',
+            ]
+
+            for pattern in admin_patterns:
+                match = re.search(pattern, text_content)
+                if match:
+                    admin_text = match.group(1).strip()
+
+                    # Parse administrator name and law firm
+                    # Common formats:
+                    # "Name, Law Firm"
+                    # "Name (Law Firm)"
+                    # "Law Firm / Name"
+                    admin_name = None
+                    law_firm = None
+
+                    if ',' in admin_text:
+                        parts = admin_text.split(',', 1)
+                        admin_name = parts[0].strip()
+                        law_firm = parts[1].strip() if len(parts) > 1 else None
+                    elif '(' in admin_text and ')' in admin_text:
+                        # Format: "Name (Law Firm)"
+                        name_match = re.match(r'([^(]+)\(([^)]+)\)', admin_text)
+                        if name_match:
+                            admin_name = name_match.group(1).strip()
+                            law_firm = name_match.group(2).strip()
+                    elif '/' in admin_text:
+                        # Format: "Law Firm / Name"
+                        parts = admin_text.split('/', 1)
+                        if len(parts) == 2:
+                            law_firm = parts[0].strip()
+                            admin_name = parts[1].strip()
+                    else:
+                        # Just a name
+                        admin_name = admin_text
+
+                    if admin_name:
+                        record.administrator = BankruptcyAdministrator(
+                            name=admin_name,
+                            law_firm=law_firm
+                        )
+                        logger.debug(f"Found administrator: {admin_name}" + (f" ({law_firm})" if law_firm else ""))
+                    break
+
+            # Extract court information
+            # Konkurslistan format: "gick i konkurs DD month YYYY efter beslut vid COURT"
+            court_patterns = [
+                r'efter beslut vid\s+([A-ZÅÄÖ][a-zåäö\s]+tingsrätt)',
+                r'Tingsrätt[:\s]+([^\n]+)',
+                r'Domstol[:\s]+([^\n]+)',
+                r'([A-ZÅÄÖ][a-zåäö]+\s+tingsrätt)',
+            ]
+
+            for pattern in court_patterns:
+                match = re.search(pattern, text_content)
+                if match:
+                    court = match.group(1).strip()
+                    # Remove any trailing text after "tingsrätt"
+                    court = re.sub(r'(tingsrätt).*', r'\1', court)
+                    record.court = court
+                    logger.debug(f"Found court: {court}")
+                    break
+
+        except Exception as e:
+            logger.debug(f"Error enriching from detail page: {e}")
 
 
 class BolagsfaktaScraper(BaseScraper):
