@@ -741,7 +741,7 @@ class KonkurslistanScraper(BaseScraper):
         try:
             logger.debug(f"Fetching detail page: {detail_url}")
             await self.page.goto(detail_url, timeout=self.timeout, wait_until='domcontentloaded')
-            await self.random_delay(0.5, 1.0)
+            await self.random_delay()
 
             # Get page content
             content = await self.page.content()
@@ -815,7 +815,7 @@ class KonkurslistanScraper(BaseScraper):
                     break
 
         except Exception as e:
-            logger.debug(f"Error enriching from detail page: {e}")
+            logger.warning(f"Failed to enrich {record.company.name} from detail page: {e}")
 
 
 class BolagsfaktaScraper(BaseScraper):

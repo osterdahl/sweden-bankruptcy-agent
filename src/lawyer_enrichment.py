@@ -80,13 +80,12 @@ class LawyerContactEnricher:
         Returns:
             Updated record with lawyer email and phone (if found)
         """
-        # Step 1: If no administrator, try to find from POIT
-        if not record.administrator:
-            logger.debug(f"No administrator for {record.company.name}, trying POIT lookup")
-            await self._enrich_from_poit(record)
+        # Step 1: Always try POIT enrichment to fill missing fields
+        #  (administrator name, law firm, court)
+        await self._enrich_from_poit(record)
 
-        # Step 2: Check if we now have administrator info
-        if not record.administrator:
+        # Step 2: Check if we have administrator info after enrichment
+        if not record.administrator or not record.administrator.name:
             logger.debug(f"No administrator found for {record.company.name}, skipping contact enrichment")
             return record
 
@@ -419,11 +418,18 @@ class LawyerContactEnricher:
                     # Clean up common suffixes
                     admin_name = re.sub(r',.*$', '', admin_name)  # Remove anything after comma
 
-                    record.administrator = BankruptcyAdministrator(
-                        name=admin_name,
-                        law_firm=law_firm
-                    )
-                    logger.info(f"✓ Found administrator from POIT: {admin_name}" + (f" ({law_firm})" if law_firm else ""))
+                    # Only set administrator fields if missing
+                    if not record.administrator:
+                        record.administrator = BankruptcyAdministrator(name=admin_name, law_firm=law_firm)
+                        logger.info(f"✓ Found administrator from POIT: {admin_name}" + (f" ({law_firm})" if law_firm else ""))
+                    else:
+                        # Fill in missing fields only
+                        if not record.administrator.name:
+                            record.administrator.name = admin_name
+                            logger.info(f"✓ Found administrator name from POIT: {admin_name}")
+                        if not record.administrator.law_firm and law_firm:
+                            record.administrator.law_firm = law_firm
+                            logger.info(f"✓ Found law firm from POIT: {law_firm}")
 
                     # Also try to extract court if not already set
                     if not record.court:

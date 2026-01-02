@@ -745,3 +745,703 @@
 2025-12-29 23:20:23,363 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
 2025-12-29 23:20:23,381 - src.aggregator_scraper - INFO - Total unique records after deduplication: 103
 2025-12-29 23:20:23,381 - src.aggregator_scraper - INFO - Enriching 103 records with company data...
+2025-12-30 21:42:46,726 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2025-12-30 21:42:46,727 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2025-12-30 21:42:47,700 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2025-12-30 21:42:52,858 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2025-12-30 21:42:52,874 - src.aggregator_scraper - DEBUG - Added: Visvall bilteknik AB from Allabolag.se
+2025-12-30 21:42:52,877 - src.aggregator_scraper - DEBUG - Added: The Brighthouse AB from Allabolag.se
+2025-12-30 21:42:52,880 - src.aggregator_scraper - DEBUG - Added: Söderhamn Sportcenter AB from Allabolag.se
+2025-12-30 21:42:52,882 - src.aggregator_scraper - DEBUG - Added: Storno Logg AB from Allabolag.se
+2025-12-30 21:42:52,885 - src.aggregator_scraper - DEBUG - Added: Som Butik AB from Allabolag.se
+2025-12-30 21:42:52,887 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Projekt AB from Allabolag.se
+2025-12-30 21:42:52,890 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling Holding 2 AB from Allabolag.se
+2025-12-30 21:42:52,892 - src.aggregator_scraper - DEBUG - Added: Salamanca in Sweden AB from Allabolag.se
+2025-12-30 21:42:52,894 - src.aggregator_scraper - DEBUG - Added: SOLIRO AB from Allabolag.se
+2025-12-30 21:42:52,896 - src.aggregator_scraper - DEBUG - Added: RUS pizzeria AB from Allabolag.se
+2025-12-30 21:42:53,221 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2025-12-30 21:43:27,104 - src.aggregator_scraper - INFO - Found 69 potential entries on Konkurslistan.se
+2025-12-30 21:43:27,117 - src.aggregator_scraper - DEBUG - Added: Melanders Taxi AB from Konkurslistan.se
+2025-12-30 21:43:27,120 - src.aggregator_scraper - DEBUG - Added: Kniberg Consulting AB from Konkurslistan.se
+2025-12-30 21:43:27,122 - src.aggregator_scraper - DEBUG - Added: La placita AB from Konkurslistan.se
+2025-12-30 21:43:27,124 - src.aggregator_scraper - DEBUG - Added: NP Spabad & Pool AB from Konkurslistan.se
+2025-12-30 21:43:27,126 - src.aggregator_scraper - DEBUG - Added: DNT Trading in Sweden AB from Konkurslistan.se
+2025-12-30 21:43:27,128 - src.aggregator_scraper - DEBUG - Added: Bonitét Mark, Marin & Bygg Aktiebolag from Konkurslistan.se
+2025-12-30 21:43:27,130 - src.aggregator_scraper - DEBUG - Added: Grönhögen Entreprenad AB from Konkurslistan.se
+2025-12-30 21:43:27,132 - src.aggregator_scraper - DEBUG - Added: Jmax bygg & smide AB from Konkurslistan.se
+2025-12-30 21:43:27,135 - src.aggregator_scraper - DEBUG - Added: Nordiska Oljelagret AB from Konkurslistan.se
+2025-12-30 21:43:27,137 - src.aggregator_scraper - DEBUG - Added: Complete Solutions international AB from Konkurslistan.se
+2025-12-30 21:43:27,139 - src.aggregator_scraper - DEBUG - Added: Im-Proffsman AB from Konkurslistan.se
+2025-12-30 21:43:27,141 - src.aggregator_scraper - DEBUG - Added: ANTC Sverige AB from Konkurslistan.se
+2025-12-30 21:43:27,143 - src.aggregator_scraper - DEBUG - Added: PLD Bygg AB from Konkurslistan.se
+2025-12-30 21:43:27,145 - src.aggregator_scraper - DEBUG - Added: Halmstad Autocenter AB from Konkurslistan.se
+2025-12-30 21:43:27,147 - src.aggregator_scraper - DEBUG - Added: RT trading ekonomisk förening from Konkurslistan.se
+2025-12-30 21:43:27,149 - src.aggregator_scraper - DEBUG - Added: Kalsen köp livsmedels, ekonomisk förening from Konkurslistan.se
+2025-12-30 21:43:27,151 - src.aggregator_scraper - DEBUG - Added: Speditören Kjell Sigolsen AB from Konkurslistan.se
+2025-12-30 21:43:27,153 - src.aggregator_scraper - DEBUG - Added: U&I Design Och Försäljning AB from Konkurslistan.se
+2025-12-30 21:43:27,155 - src.aggregator_scraper - DEBUG - Added: Mat & Upplevelser på Öresundsön AB from Konkurslistan.se
+2025-12-30 21:43:27,157 - src.aggregator_scraper - DEBUG - Added: LåtOss Redovisning AB from Konkurslistan.se
+2025-12-30 21:43:27,158 - src.aggregator_scraper - DEBUG - Added: Sumpans Fastighetsservice AB from Konkurslistan.se
+2025-12-30 21:43:27,160 - src.aggregator_scraper - DEBUG - Added: E&A Couriers AB from Konkurslistan.se
+2025-12-30 21:43:27,162 - src.aggregator_scraper - DEBUG - Added: Certus Capital AB from Konkurslistan.se
+2025-12-30 21:43:27,165 - src.aggregator_scraper - DEBUG - Added: Adjust Moving AB from Konkurslistan.se
+2025-12-30 21:43:27,167 - src.aggregator_scraper - DEBUG - Added: LW Vårdbemanning AB from Konkurslistan.se
+2025-12-30 21:43:27,168 - src.aggregator_scraper - DEBUG - Added: RoadBird AB from Konkurslistan.se
+2025-12-30 21:43:27,170 - src.aggregator_scraper - DEBUG - Added: Stocab Holding AB from Konkurslistan.se
+2025-12-30 21:43:27,172 - src.aggregator_scraper - DEBUG - Added: Spånga education AB from Konkurslistan.se
+2025-12-30 21:43:27,174 - src.aggregator_scraper - DEBUG - Added: Husagren Auto Moto Service & Utbildning AB from Konkurslistan.se
+2025-12-30 21:43:27,176 - src.aggregator_scraper - DEBUG - Added: Absons AB from Konkurslistan.se
+2025-12-30 21:43:27,178 - src.aggregator_scraper - DEBUG - Added: Simpleecom Sweden AB from Konkurslistan.se
+2025-12-30 21:43:27,180 - src.aggregator_scraper - DEBUG - Added: Webgrossen i Sverige AB from Konkurslistan.se
+2025-12-30 21:43:27,181 - src.aggregator_scraper - DEBUG - Added: Naks Thai Takeaway AB from Konkurslistan.se
+2025-12-30 21:43:27,183 - src.aggregator_scraper - DEBUG - Added: THP Group AB from Konkurslistan.se
+2025-12-30 21:43:27,186 - src.aggregator_scraper - DEBUG - Added: Johan Jonsson Bygg AB from Konkurslistan.se
+2025-12-30 21:43:27,188 - src.aggregator_scraper - DEBUG - Added: JI i Karlshamn AB from Konkurslistan.se
+2025-12-30 21:43:27,190 - src.aggregator_scraper - DEBUG - Added: Nadorcott Demo & Event AB from Konkurslistan.se
+2025-12-30 21:43:27,192 - src.aggregator_scraper - DEBUG - Added: Estia förskola AB from Konkurslistan.se
+2025-12-30 21:43:27,194 - src.aggregator_scraper - DEBUG - Added: Ronja Clean Energy AB from Konkurslistan.se
+2025-12-30 21:43:27,196 - src.aggregator_scraper - DEBUG - Added: ADD Accelerated Drug Development AB from Konkurslistan.se
+2025-12-30 21:43:27,198 - src.aggregator_scraper - DEBUG - Added: Vaxia Entreprenad AB from Konkurslistan.se
+2025-12-30 21:43:27,200 - src.aggregator_scraper - DEBUG - Added: Claudio''s Transport AB from Konkurslistan.se
+2025-12-30 21:43:27,202 - src.aggregator_scraper - DEBUG - Added: Sekes Fastighetstjänst AB from Konkurslistan.se
+2025-12-30 21:43:27,203 - src.aggregator_scraper - DEBUG - Added: Bygglabbet i Stockholm AB from Konkurslistan.se
+2025-12-30 21:43:27,205 - src.aggregator_scraper - DEBUG - Added: Wimao Impossible Plastics AB from Konkurslistan.se
+2025-12-30 21:43:27,207 - src.aggregator_scraper - DEBUG - Added: FORCE Entreprenad AB from Konkurslistan.se
+2025-12-30 21:43:27,209 - src.aggregator_scraper - DEBUG - Added: Mek Anläggning Drift & Ombyggnad i Sverige AB from Konkurslistan.se
+2025-12-30 21:43:27,211 - src.aggregator_scraper - DEBUG - Added: Tak i Solen AB from Konkurslistan.se
+2025-12-30 21:43:27,213 - src.aggregator_scraper - DEBUG - Added: Gustaf Petterssons Plåtslageri Aktiebolag from Konkurslistan.se
+2025-12-30 21:43:27,215 - src.aggregator_scraper - DEBUG - Added: Rothars AB from Konkurslistan.se
+2025-12-30 21:43:27,217 - src.aggregator_scraper - DEBUG - Added: Dogwarts AB from Konkurslistan.se
+2025-12-30 21:43:27,219 - src.aggregator_scraper - DEBUG - Added: Sassyest AB from Konkurslistan.se
+2025-12-30 21:43:27,221 - src.aggregator_scraper - DEBUG - Added: BM ENTERPRISES AB from Konkurslistan.se
+2025-12-30 21:43:27,222 - src.aggregator_scraper - DEBUG - Added: Tage & Söner Byggnads AB from Konkurslistan.se
+2025-12-30 21:43:27,224 - src.aggregator_scraper - DEBUG - Added: PA Contractor AB from Konkurslistan.se
+2025-12-30 21:43:27,226 - src.aggregator_scraper - DEBUG - Added: Food Court i Gränby AB from Konkurslistan.se
+2025-12-30 21:43:27,228 - src.aggregator_scraper - DEBUG - Added: Comprehensivus AB from Konkurslistan.se
+2025-12-30 21:43:27,230 - src.aggregator_scraper - DEBUG - Added: Norra allservice AB from Konkurslistan.se
+2025-12-30 21:43:27,232 - src.aggregator_scraper - DEBUG - Added: QVICK's MINIGRÄV Handelsbolag from Konkurslistan.se
+2025-12-30 21:43:27,234 - src.aggregator_scraper - DEBUG - Added: Charkeriet i Huskvarna AB from Konkurslistan.se
+2025-12-30 21:43:27,236 - src.aggregator_scraper - DEBUG - Added: Aphatech AB from Konkurslistan.se
+2025-12-30 21:43:27,238 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Holding 2 AB
+2025-12-30 21:43:27,240 - src.aggregator_scraper - DEBUG - Merged: Skandinavisk Boutveckling Projekt AB
+2025-12-30 21:43:27,242 - src.aggregator_scraper - DEBUG - Added: Dan Hall Holding AB from Konkurslistan.se
+2025-12-30 21:43:27,244 - src.aggregator_scraper - DEBUG - Merged: Storno Logg AB
+2025-12-30 21:43:27,246 - src.aggregator_scraper - DEBUG - Added: Af bilar & bilverkstad AB from Konkurslistan.se
+2025-12-30 21:43:27,247 - src.aggregator_scraper - DEBUG - Added: PINTERI AB from Konkurslistan.se
+2025-12-30 21:43:27,249 - src.aggregator_scraper - DEBUG - Added: Gramsi AB from Konkurslistan.se
+2025-12-30 21:43:27,251 - src.aggregator_scraper - DEBUG - Added: Kattvikskajen Schweizeri & Stenugnsbageri AB from Konkurslistan.se
+2025-12-30 21:43:27,670 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2025-12-30 21:43:31,531 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2025-12-30 21:43:31,551 - src.aggregator_scraper - INFO - Total unique records after deduplication: 76
+2025-12-30 21:43:31,552 - src.aggregator_scraper - INFO - Enriching 76 records with company data...
+2025-12-30 21:48:35,386 - src.agent - INFO - Scraped 76 bankruptcy records
+2025-12-30 21:48:35,388 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2025-12-30 21:48:35,860 - src.lawyer_enrichment - DEBUG - Lawyer enrichment browser initialized
+2025-12-30 21:48:35,860 - src.lawyer_enrichment - DEBUG - No administrator for Visvall bilteknik AB, skipping enrichment
+2025-12-30 21:48:36,862 - src.lawyer_enrichment - DEBUG - No administrator for The Brighthouse AB, skipping enrichment
+2025-12-30 21:48:37,865 - src.lawyer_enrichment - DEBUG - No administrator for Söderhamn Sportcenter AB, skipping enrichment
+2025-12-30 21:48:38,867 - src.lawyer_enrichment - DEBUG - No administrator for Storno Logg AB, skipping enrichment
+2025-12-30 21:48:39,870 - src.lawyer_enrichment - DEBUG - No administrator for Som Butik AB, skipping enrichment
+2025-12-30 21:48:40,873 - src.lawyer_enrichment - DEBUG - No administrator for Skandinavisk Boutveckling Projekt AB, skipping enrichment
+2025-12-30 21:48:41,877 - src.lawyer_enrichment - DEBUG - No administrator for Skandinavisk Boutveckling Holding 2 AB, skipping enrichment
+2025-12-30 21:48:42,880 - src.lawyer_enrichment - DEBUG - No administrator for Salamanca in Sweden AB, skipping enrichment
+2025-12-30 21:48:43,884 - src.lawyer_enrichment - DEBUG - No administrator for SOLIRO AB, skipping enrichment
+2025-12-30 21:48:44,887 - src.lawyer_enrichment - DEBUG - No administrator for RUS pizzeria AB, skipping enrichment
+2025-12-30 21:48:45,889 - src.lawyer_enrichment - DEBUG - No administrator for Melanders Taxi AB, skipping enrichment
+2025-12-30 21:48:46,892 - src.lawyer_enrichment - DEBUG - No administrator for Kniberg Consulting AB, skipping enrichment
+2025-12-30 21:48:47,893 - src.lawyer_enrichment - DEBUG - No administrator for La placita AB, skipping enrichment
+2025-12-30 21:48:48,896 - src.lawyer_enrichment - DEBUG - No administrator for NP Spabad & Pool AB, skipping enrichment
+2025-12-30 21:48:49,899 - src.lawyer_enrichment - DEBUG - No administrator for DNT Trading in Sweden AB, skipping enrichment
+2025-12-30 21:48:50,902 - src.lawyer_enrichment - DEBUG - No administrator for Bonitét Mark, Marin & Bygg Aktiebolag, skipping enrichment
+2025-12-30 21:48:51,904 - src.lawyer_enrichment - DEBUG - No administrator for Grönhögen Entreprenad AB, skipping enrichment
+2025-12-30 21:48:52,906 - src.lawyer_enrichment - DEBUG - No administrator for Jmax bygg & smide AB, skipping enrichment
+2025-12-30 21:48:53,909 - src.lawyer_enrichment - DEBUG - No administrator for Nordiska Oljelagret AB, skipping enrichment
+2025-12-30 21:48:54,912 - src.lawyer_enrichment - DEBUG - No administrator for Complete Solutions international AB, skipping enrichment
+2025-12-30 21:48:55,915 - src.lawyer_enrichment - DEBUG - No administrator for Im-Proffsman AB, skipping enrichment
+2025-12-30 21:48:56,918 - src.lawyer_enrichment - DEBUG - No administrator for ANTC Sverige AB, skipping enrichment
+2025-12-30 21:48:57,919 - src.lawyer_enrichment - DEBUG - No administrator for PLD Bygg AB, skipping enrichment
+2025-12-30 21:48:58,921 - src.lawyer_enrichment - DEBUG - No administrator for Halmstad Autocenter AB, skipping enrichment
+2025-12-30 21:48:59,924 - src.lawyer_enrichment - DEBUG - No administrator for RT trading ekonomisk förening, skipping enrichment
+2025-12-30 21:49:00,925 - src.lawyer_enrichment - DEBUG - No administrator for Kalsen köp livsmedels, ekonomisk förening, skipping enrichment
+2025-12-30 21:49:01,926 - src.lawyer_enrichment - DEBUG - No administrator for Speditören Kjell Sigolsen AB, skipping enrichment
+2025-12-30 21:49:02,929 - src.lawyer_enrichment - DEBUG - No administrator for U&I Design Och Försäljning AB, skipping enrichment
+2025-12-30 21:49:03,932 - src.lawyer_enrichment - DEBUG - No administrator for Mat & Upplevelser på Öresundsön AB, skipping enrichment
+2025-12-30 21:49:04,935 - src.lawyer_enrichment - DEBUG - No administrator for LåtOss Redovisning AB, skipping enrichment
+2025-12-30 21:49:05,936 - src.lawyer_enrichment - DEBUG - No administrator for Sumpans Fastighetsservice AB, skipping enrichment
+2025-12-30 21:49:06,937 - src.lawyer_enrichment - DEBUG - No administrator for E&A Couriers AB, skipping enrichment
+2025-12-30 21:49:07,939 - src.lawyer_enrichment - DEBUG - No administrator for Certus Capital AB, skipping enrichment
+2025-12-30 21:49:08,941 - src.lawyer_enrichment - DEBUG - No administrator for Adjust Moving AB, skipping enrichment
+2025-12-30 21:49:09,943 - src.lawyer_enrichment - DEBUG - No administrator for LW Vårdbemanning AB, skipping enrichment
+2025-12-30 21:49:10,947 - src.lawyer_enrichment - DEBUG - No administrator for RoadBird AB, skipping enrichment
+2025-12-30 21:49:11,950 - src.lawyer_enrichment - DEBUG - No administrator for Stocab Holding AB, skipping enrichment
+2025-12-30 21:49:12,953 - src.lawyer_enrichment - DEBUG - No administrator for Spånga education AB, skipping enrichment
+2025-12-30 21:49:13,956 - src.lawyer_enrichment - DEBUG - No administrator for Husagren Auto Moto Service & Utbildning AB, skipping enrichment
+2025-12-30 21:49:14,959 - src.lawyer_enrichment - DEBUG - No administrator for Absons AB, skipping enrichment
+2025-12-30 21:49:15,961 - src.lawyer_enrichment - DEBUG - No administrator for Simpleecom Sweden AB, skipping enrichment
+2025-12-30 21:49:16,964 - src.lawyer_enrichment - DEBUG - No administrator for Webgrossen i Sverige AB, skipping enrichment
+2025-12-30 21:49:17,967 - src.lawyer_enrichment - DEBUG - No administrator for Naks Thai Takeaway AB, skipping enrichment
+2025-12-30 21:49:18,971 - src.lawyer_enrichment - DEBUG - No administrator for THP Group AB, skipping enrichment
+2025-12-30 21:49:19,973 - src.lawyer_enrichment - DEBUG - No administrator for Johan Jonsson Bygg AB, skipping enrichment
+2025-12-30 21:49:20,975 - src.lawyer_enrichment - DEBUG - No administrator for JI i Karlshamn AB, skipping enrichment
+2025-12-30 21:49:21,978 - src.lawyer_enrichment - DEBUG - No administrator for Nadorcott Demo & Event AB, skipping enrichment
+2025-12-30 21:49:22,981 - src.lawyer_enrichment - DEBUG - No administrator for Estia förskola AB, skipping enrichment
+2025-12-30 21:49:23,984 - src.lawyer_enrichment - DEBUG - No administrator for Ronja Clean Energy AB, skipping enrichment
+2025-12-30 21:49:24,987 - src.lawyer_enrichment - DEBUG - No administrator for ADD Accelerated Drug Development AB, skipping enrichment
+2025-12-30 21:49:25,990 - src.lawyer_enrichment - DEBUG - No administrator for Vaxia Entreprenad AB, skipping enrichment
+2025-12-30 21:49:26,993 - src.lawyer_enrichment - DEBUG - No administrator for Claudio''s Transport AB, skipping enrichment
+2025-12-30 21:49:27,995 - src.lawyer_enrichment - DEBUG - No administrator for Sekes Fastighetstjänst AB, skipping enrichment
+2025-12-30 21:49:28,998 - src.lawyer_enrichment - DEBUG - No administrator for Bygglabbet i Stockholm AB, skipping enrichment
+2025-12-30 21:49:30,001 - src.lawyer_enrichment - DEBUG - No administrator for Wimao Impossible Plastics AB, skipping enrichment
+2025-12-30 21:49:31,004 - src.lawyer_enrichment - DEBUG - No administrator for FORCE Entreprenad AB, skipping enrichment
+2025-12-30 21:49:32,008 - src.lawyer_enrichment - DEBUG - No administrator for Mek Anläggning Drift & Ombyggnad i Sverige AB, skipping enrichment
+2025-12-30 21:49:33,011 - src.lawyer_enrichment - DEBUG - No administrator for Tak i Solen AB, skipping enrichment
+2025-12-30 21:49:34,014 - src.lawyer_enrichment - DEBUG - No administrator for Gustaf Petterssons Plåtslageri Aktiebolag, skipping enrichment
+2025-12-30 21:49:35,016 - src.lawyer_enrichment - DEBUG - No administrator for Rothars AB, skipping enrichment
+2025-12-30 21:49:36,018 - src.lawyer_enrichment - DEBUG - No administrator for Dogwarts AB, skipping enrichment
+2025-12-30 21:49:37,019 - src.lawyer_enrichment - DEBUG - No administrator for Sassyest AB, skipping enrichment
+2025-12-30 21:49:38,021 - src.lawyer_enrichment - DEBUG - No administrator for BM ENTERPRISES AB, skipping enrichment
+2025-12-30 21:49:39,024 - src.lawyer_enrichment - DEBUG - No administrator for Tage & Söner Byggnads AB, skipping enrichment
+2025-12-30 21:49:40,026 - src.lawyer_enrichment - DEBUG - No administrator for PA Contractor AB, skipping enrichment
+2025-12-30 21:49:41,029 - src.lawyer_enrichment - DEBUG - No administrator for Food Court i Gränby AB, skipping enrichment
+2025-12-30 21:49:42,032 - src.lawyer_enrichment - DEBUG - No administrator for Comprehensivus AB, skipping enrichment
+2025-12-30 21:49:43,035 - src.lawyer_enrichment - DEBUG - No administrator for Norra allservice AB, skipping enrichment
+2025-12-30 21:49:44,037 - src.lawyer_enrichment - DEBUG - No administrator for QVICK's MINIGRÄV Handelsbolag, skipping enrichment
+2025-12-30 21:49:45,040 - src.lawyer_enrichment - DEBUG - No administrator for Charkeriet i Huskvarna AB, skipping enrichment
+2025-12-30 21:49:46,042 - src.lawyer_enrichment - DEBUG - No administrator for Aphatech AB, skipping enrichment
+2025-12-30 21:49:47,045 - src.lawyer_enrichment - DEBUG - No administrator for Dan Hall Holding AB, skipping enrichment
+2025-12-30 21:49:48,046 - src.lawyer_enrichment - DEBUG - No administrator for Af bilar & bilverkstad AB, skipping enrichment
+2025-12-30 21:49:49,049 - src.lawyer_enrichment - DEBUG - No administrator for PINTERI AB, skipping enrichment
+2025-12-30 21:49:50,052 - src.lawyer_enrichment - DEBUG - No administrator for Gramsi AB, skipping enrichment
+2025-12-30 21:49:51,055 - src.lawyer_enrichment - DEBUG - No administrator for Kattvikskajen Schweizeri & Stenugnsbageri AB, skipping enrichment
+2025-12-30 21:49:52,096 - src.lawyer_enrichment - DEBUG - Lawyer enrichment browser closed
+2025-12-30 21:49:52,096 - src.filter - DEBUG - Record Visvall bilteknik AB (559305-2573) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record The Brighthouse AB (559202-2049) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Söderhamn Sportcenter AB (559296-1071) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Storno Logg AB (559001-7389) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Som Butik AB (556901-5257) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Skandinavisk Boutveckling Projekt AB (559323-7554) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Skandinavisk Boutveckling Holding 2 AB (559349-2316) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Salamanca in Sweden AB (559255-5857) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record SOLIRO AB (559490-9920) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record RUS pizzeria AB (559403-2988) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Melanders Taxi AB (559107-5725) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Kniberg Consulting AB (559372-7125) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record La placita AB (559483-6107) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record NP Spabad & Pool AB (559340-4113) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record DNT Trading in Sweden AB (559296-0164) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Bonitét Mark, Marin & Bygg Aktiebolag (556584-8461) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Grönhögen Entreprenad AB (559232-8560) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Jmax bygg & smide AB (559106-3796) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Nordiska Oljelagret AB (559104-3202) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Complete Solutions international AB (559367-3790) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Im-Proffsman AB (559316-3214) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record ANTC Sverige AB (559144-6793) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record PLD Bygg AB (556672-5320) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Halmstad Autocenter AB (556682-2002) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record RT trading ekonomisk förening (769640-8199) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Kalsen köp livsmedels, ekonomisk förening (769632-2911) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,097 - src.filter - DEBUG - Record Speditören Kjell Sigolsen AB (556714-0487) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record U&I Design Och Försäljning AB (559315-3801) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Mat & Upplevelser på Öresundsön AB (559103-0175) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record LåtOss Redovisning AB (559328-4614) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Sumpans Fastighetsservice AB (559306-6409) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record E&A Couriers AB (559305-8349) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Certus Capital AB (556779-1677) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Adjust Moving AB (559386-5883) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record LW Vårdbemanning AB (559435-2915) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record RoadBird AB (559342-8229) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Stocab Holding AB (556779-5397) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Spånga education AB (559339-9255) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Husagren Auto Moto Service & Utbildning AB (559518-0836) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Absons AB (559345-2427) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Simpleecom Sweden AB (559519-8424) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Webgrossen i Sverige AB (556828-9184) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Naks Thai Takeaway AB (559375-1737) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record THP Group AB (559287-0801) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Johan Jonsson Bygg AB (559344-2014) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record JI i Karlshamn AB (559128-8617) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Nadorcott Demo & Event AB (559245-8672) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Estia förskola AB (556807-1863) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Ronja Clean Energy AB (559409-8591) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record ADD Accelerated Drug Development AB (556810-4755) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Vaxia Entreprenad AB (556822-8356) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Claudio''s Transport AB (559431-0228) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Sekes Fastighetstjänst AB (559173-2093) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Bygglabbet i Stockholm AB (559360-4308) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,098 - src.filter - DEBUG - Record Wimao Impossible Plastics AB (559265-4403) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record FORCE Entreprenad AB (559452-6526) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Mek Anläggning Drift & Ombyggnad i Sverige AB (559001-5367) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Tak i Solen AB (559419-0216) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Gustaf Petterssons Plåtslageri Aktiebolag (556099-5937) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Rothars AB (559391-8997) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Dogwarts AB (559101-7644) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Sassyest AB (559246-4787) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record BM ENTERPRISES AB (559507-1118) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Tage & Söner Byggnads AB (556118-4440) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record PA Contractor AB (559078-1547) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Food Court i Gränby AB (559065-6681) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Comprehensivus AB (559156-9784) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Norra allservice AB (556900-0267) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record QVICK's MINIGRÄV Handelsbolag (916922-4012) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Charkeriet i Huskvarna AB (556766-5616) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Aphatech AB (559133-4882) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Dan Hall Holding AB (559292-3865) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Af bilar & bilverkstad AB (559525-4821) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record PINTERI AB (559114-7615) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Gramsi AB (559237-4986) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - DEBUG - Record Kattvikskajen Schweizeri & Stenugnsbageri AB (559287-8663) MATCHED: no filter criteria - showing all
+2025-12-30 21:49:52,099 - src.filter - INFO - Filtered 76 records -> 76 matches
+2025-12-30 21:49:52,099 - src.agent - INFO - Filtered to 76 matching records
+2025-12-30 21:49:52,156 - src.agent - INFO - Stored 76 records in database
+2025-12-30 21:49:52,161 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20251230_214952.json and data/exports/bankruptcies_2025_12_20251230_214952.csv
+2025-12-30 21:49:52,161 - src.agent - INFO - Monthly report completed: 76 found, 76 matched
+2026-01-01 16:43:37,556 - __main__ - INFO - Starting Sweden Bankruptcy Monitoring Agent
+2026-01-01 16:43:37,559 - src.agent - INFO - Starting monthly bankruptcy report for 2025-12
+2026-01-01 16:43:38,521 - src.aggregator_scraper - INFO - Scraping Allabolag.se...
+2026-01-01 16:43:43,374 - src.aggregator_scraper - INFO - Found 10 potential entries on Allabolag.se
+2026-01-01 16:43:43,390 - src.aggregator_scraper - DEBUG - Added: Tullhuset i Trosa AB from Allabolag.se
+2026-01-01 16:43:43,393 - src.aggregator_scraper - DEBUG - Added: Sweden hockey factory AB from Allabolag.se
+2026-01-01 16:43:43,396 - src.aggregator_scraper - DEBUG - Added: Svenska NL AB from Allabolag.se
+2026-01-01 16:43:43,398 - src.aggregator_scraper - DEBUG - Added: Steady impetus AB from Allabolag.se
+2026-01-01 16:43:43,401 - src.aggregator_scraper - DEBUG - Added: Skillnaden Bygg AB from Allabolag.se
+2026-01-01 16:43:43,403 - src.aggregator_scraper - DEBUG - Added: Skantel AB from Allabolag.se
+2026-01-01 16:43:43,406 - src.aggregator_scraper - DEBUG - Added: Skandinavisk Boutveckling of Sweden AB from Allabolag.se
+2026-01-01 16:43:43,408 - src.aggregator_scraper - DEBUG - Added: Saltvik Transport AB from Allabolag.se
+2026-01-01 16:43:43,410 - src.aggregator_scraper - DEBUG - Added: Salong Centralen AB from Allabolag.se
+2026-01-01 16:43:43,412 - src.aggregator_scraper - DEBUG - Added: Ropus Engineering & Development AB from Allabolag.se
+2026-01-01 16:43:43,731 - src.aggregator_scraper - INFO - Scraping Konkurslistan.se...
+2026-01-01 16:43:48,469 - src.aggregator_scraper - INFO - Found 100 potential entries on Konkurslistan.se
+2026-01-01 16:43:48,484 - src.aggregator_scraper - DEBUG - Fetching detail page: https://www.konkurslistan.se/konkurser/7696386809
+2026-01-01 16:43:50,037 - src.aggregator_scraper - DEBUG - Error enriching from detail page: BaseScraper.random_delay() takes 1 positional argument but 3 were given
+2026-01-01 16:43:50,038 - src.aggregator_scraper - DEBUG - Added: Bostadsrättsföreningen Norre 15 from Konkurslistan.se
+2026-01-01 16:43:50,040 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,041 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,042 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,042 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,043 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,043 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,044 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,044 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,045 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,045 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,046 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,046 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,047 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,047 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,049 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,054 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,055 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,055 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,056 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,057 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,057 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,058 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,058 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,059 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,060 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,060 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,061 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,061 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,063 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,066 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,067 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,067 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,068 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,068 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,069 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,070 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,070 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,071 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,071 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,072 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,072 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,073 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,074 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,074 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,075 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,075 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,076 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,076 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,077 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,077 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,078 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,078 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,079 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,079 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,080 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,081 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,083 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,083 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,084 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,088 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,089 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,089 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,090 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,090 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,090 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,091 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,091 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,092 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,092 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,093 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,093 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,094 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,094 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,095 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,095 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,096 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,096 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,097 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,097 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,098 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,098 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,099 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,100 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,100 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,101 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,101 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,103 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,103 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,104 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,104 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,105 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,105 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,106 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,106 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,106 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,107 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,107 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,108 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,108 - src.aggregator_scraper - DEBUG - Error parsing entry: ElementHandle.inner_text: Execution context was destroyed, most likely because of a navigation
+Call log:
+  - waiting for locator(":scope")
+
+2026-01-01 16:43:50,470 - src.aggregator_scraper - INFO - Scraping Bolagsfakta.se...
+2026-01-01 16:43:54,542 - src.aggregator_scraper - INFO - Found 0 potential entries on Bolagsfakta.se
+2026-01-01 16:43:54,558 - src.aggregator_scraper - INFO - Total unique records after deduplication: 11
+2026-01-01 16:43:54,558 - src.aggregator_scraper - INFO - Enriching 11 records with company data...
+2026-01-01 16:44:39,688 - src.agent - INFO - Scraped 11 bankruptcy records
+2026-01-01 16:44:39,689 - src.agent - INFO - Enriching lawyer contact information from Bolagsverket...
+2026-01-01 16:44:40,138 - src.lawyer_enrichment - DEBUG - Lawyer enrichment browser initialized
+2026-01-01 16:44:40,138 - src.lawyer_enrichment - DEBUG - No administrator for Tullhuset i Trosa AB, skipping enrichment
+2026-01-01 16:44:41,138 - src.lawyer_enrichment - DEBUG - No administrator for Sweden hockey factory AB, skipping enrichment
+2026-01-01 16:44:42,147 - src.lawyer_enrichment - DEBUG - No administrator for Svenska NL AB, skipping enrichment
+2026-01-01 16:44:43,149 - src.lawyer_enrichment - DEBUG - No administrator for Steady impetus AB, skipping enrichment
+2026-01-01 16:44:44,153 - src.lawyer_enrichment - DEBUG - No administrator for Skillnaden Bygg AB, skipping enrichment
+2026-01-01 16:44:45,154 - src.lawyer_enrichment - DEBUG - No administrator for Skantel AB, skipping enrichment
+2026-01-01 16:44:46,155 - src.lawyer_enrichment - DEBUG - No administrator for Skandinavisk Boutveckling of Sweden AB, skipping enrichment
+2026-01-01 16:44:47,157 - src.lawyer_enrichment - DEBUG - No administrator for Saltvik Transport AB, skipping enrichment
+2026-01-01 16:44:48,175 - src.lawyer_enrichment - DEBUG - No administrator for Salong Centralen AB, skipping enrichment
+2026-01-01 16:44:49,177 - src.lawyer_enrichment - DEBUG - No administrator for Ropus Engineering & Development AB, skipping enrichment
+2026-01-01 16:44:50,178 - src.lawyer_enrichment - DEBUG - No administrator for Bostadsrättsföreningen Norre 15, skipping enrichment
+2026-01-01 16:44:51,210 - src.lawyer_enrichment - DEBUG - Lawyer enrichment browser closed
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Tullhuset i Trosa AB (559306-9890) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Sweden hockey factory AB (559305-8224) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Svenska NL AB (559416-5085) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Steady impetus AB (556848-1336) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Skillnaden Bygg AB (556564-6667) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Skantel AB (559328-3202) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Skandinavisk Boutveckling of Sweden AB (559096-9266) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Saltvik Transport AB (559119-0508) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Salong Centralen AB (559432-1969) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Ropus Engineering & Development AB (559144-6132) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - DEBUG - Record Bostadsrättsföreningen Norre 15 (769638-6809) MATCHED: no filter criteria - showing all
+2026-01-01 16:44:51,210 - src.filter - INFO - Filtered 11 records -> 11 matches
+2026-01-01 16:44:51,211 - src.agent - INFO - Filtered to 11 matching records
+2026-01-01 16:44:51,225 - src.agent - INFO - Stored 11 records in database
+2026-01-01 16:44:51,226 - src.agent - INFO - Exported to data/exports/bankruptcies_2025_12_20260101_164451.json and data/exports/bankruptcies_2025_12_20260101_164451.csv
+2026-01-01 16:44:51,228 - src.agent - INFO - Monthly report completed: 11 found, 11 matched
