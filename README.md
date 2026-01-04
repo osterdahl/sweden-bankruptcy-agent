@@ -89,13 +89,32 @@ FILTER_REGIONS=Stockholms län  # Regions (comma-separated)
 
 The agent scrapes these public aggregator sites:
 
-| Source | Data Available |
+| Source | Data Collected |
 |--------|----------------|
-| **Allabolag.se** | Company info, financials |
-| **Konkurslistan.se** | Bankruptcy listings |
-| **Bolagsfakta.se** | Company details |
+| **Konkurslistan.se** | Company name, org number, date, court, business type, location |
+| **Allabolag.se** | Company name, org number, region, business type |
+| **Bolagsfakta.se** | Company name, org number, basic info |
 
 All sources compile official Swedish court decisions.
+
+### Email Report Fields (5/9 fields automated)
+
+**Automatically Collected:**
+- ✅ Company Name & Organization Number
+- ✅ Bankruptcy Declaration Date
+- ✅ Business Type (when available)
+- ✅ Court (extracted from detail pages)
+- ✅ Location (city/region)
+
+**Requires Manual Lookup:**
+- ⚠️  Administrator Name & Law Firm
+- ⚠️  Email & Phone Contact
+
+**Not Available on Public Pages:**
+- ❌ Number of Employees
+- ❌ Revenue
+
+**Why administrator info isn't automated:** The official source (POIT - Post- och Inrikes Tidningar) implements CAPTCHA protection to prevent automated access. Each email report includes a POIT link for manual administrator lookup when needed. See `POIT_LIMITATION_ANALYSIS.md` for technical details.
 
 ## Usage
 

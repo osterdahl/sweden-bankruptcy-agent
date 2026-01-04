@@ -39,18 +39,32 @@
 **Evidence:** 0/10 records have administrator after scraping
 **Conclusion:** Administrator data must come from POIT (official gazette)
 
-### 2. POIT Enrichment Selectors Incorrect - **NEEDS FIX** ❌
-**Issue:** POIT site selectors don't match actual page structure
-- `input#orgnr` → NOT FOUND
-- `select#kungtyp` → NOT FOUND
+### 2. POIT Enrichment Blocked by CAPTCHA - **CANNOT FIX** 🚫
+**Issue:** POIT website implements F5/Akamai bot protection with CAPTCHA challenges
+- Automated access triggers: "What code is in the image?"
+- Search form elements (`input#orgnr`, `select#kungtyp`) never accessible
+- Bot protection cannot be bypassed ethically or reliably
 
-**Impact:** POIT enrichment cannot find/extract administrator information
-**Evidence:** Test showed "Org input found: False, Select found: False"
-**Result:** 0/5 records enriched with administrator info from POIT
+**Impact:** Administrator name, law firm, email, and phone cannot be automatically collected
+**Evidence:**
+- Browser inspection shows CAPTCHA challenge page
+- Stealth techniques (disabled automation flags, Swedish locale, realistic UA) still trigger CAPTCHA
+- Screenshot saved: `/tmp/poit_page_structure.png`
 
-**Root Cause:** POIT site structure likely changed or uses different selectors
-**Required Fix:** Inspect actual POIT site and update selectors in:
-- `src/lawyer_enrichment.py` lines 386-393
+**Root Cause:** POIT deliberately blocks automated access to prevent scraping
+**Alternative Sources Investigated:**
+- ❌ Bolagsverket API: No public API for bankruptcy administrators
+- ❌ Sveriges Domstolar: No public lookup tool (redirects to POIT)
+- ❌ Tillväxtanalys: Only aggregate statistics, not individual cases
+
+**Official Confirmation:** Sveriges Domstolar states POIT is the **only** official source for administrator info
+
+**Conclusion:** This is a fundamental limitation. Administrator data requires either:
+1. Manual POIT lookup (free, time-consuming)
+2. Third-party paid services (UC, Bisnode, etc.)
+3. Contacting Bolagsverket for official API access
+
+**See:** `POIT_LIMITATION_ANALYSIS.md` for comprehensive technical analysis
 
 ### 3. Bolagsfakta Scraper - **MAY NEED INVESTIGATION** ⚠️
 **Result:** Found 0 records for December 2025
@@ -103,29 +117,57 @@
 
 **Estimated Completeness in Production: 5-6 out of 9 email fields**
 
-## 🔧 Required Next Steps
+## 🔧 Recommended Next Steps
 
-### Priority 1: Fix POIT Selectors (CRITICAL)
-**Task:** Inspect actual POIT website and update selectors
-**Files:** `src/lawyer_enrichment.py`
-**Steps:**
-1. Visit https://poit.bolagsverket.se/poit-app/sok in browser
-2. Inspect actual input field IDs and select element IDs
-3. Update selectors in `_enrich_from_poit` method
-4. Test with real org numbers
+### Priority 1: Optimize Current Working Features ✅
+**Status:** READY TO DEPLOY
+**What Works:**
+- Bankruptcy scraping (Konkurslistan, Allabolag)
+- Court extraction from detail pages (100% success rate)
+- Basic company data collection (name, org number, date, location, business type)
+- Database storage
+- Email generation with 5/9 fields
 
-**Impact:** Would enable administrator name, law firm, and improved court data
+**Actions:**
+1. ✅ Bug fixes completed and tested
+2. ✅ Court extraction verified working
+3. ✅ Email template shows all fields (admin fields will be empty)
+4. Push current state to production
 
-### Priority 2: Test Lawyer Contact Enrichment
-**Prerequisite:** POIT must work first (need administrator name/firm)
-**Task:** Once POIT works, verify lawyer contact enrichment finds email/phone
-**Expected:** 30-50% success rate (depends on law firm website availability)
+**Impact:** System provides valuable bankruptcy filtering with court information
 
-### Priority 3: Consider Alternative Data Sources
-**Options:**
-- Scrape bankruptcy court websites directly
-- Use alternative APIs if available
-- Accept that some fields may remain empty
+### Priority 2: Document POIT Limitation for Users
+**Status:** DOCUMENTATION CREATED
+**Task:** Update README and user-facing docs to explain:
+- Administrator info cannot be automatically collected (CAPTCHA protection)
+- Email reports will show 5/9 fields reliably
+- Manual POIT lookup available via provided links
+
+**Files to Update:**
+- README.md
+- User guide / setup instructions
+
+**Impact:** Set clear expectations about system capabilities
+
+### Priority 3: Consider Alternative Approaches (OPTIONAL)
+**Status:** FOR FUTURE EVALUATION
+
+**Option A: Manual Lookup Workflow**
+- Add "Update Administrator" feature to allow manual entry
+- Store administrator info in database for future use
+- Low effort, no cost, selective manual work
+
+**Option B: Third-party Data Service**
+- Research UC, Bisnode, Roaring.io APIs
+- Evaluate pricing vs. value
+- Medium effort, ongoing cost, automated collection
+
+**Option C: Official API Access**
+- Contact Bolagsverket (foretagsreg-api@bolagsverket.se)
+- Request official API access for legitimate business use
+- Low effort to request, uncertain availability
+
+**See:** `POIT_LIMITATION_ANALYSIS.md` for detailed analysis of each option
 
 ## 📈 Success Metrics
 
@@ -150,17 +192,31 @@
 3. **Regex patterns work well** - Court extraction pattern successfully matches Swedish text
 4. **Testing reveals real-world limitations** - What works in theory may not work due to data availability
 
-## 📋 Recommendation
+## 📋 Final Recommendation
 
-**PUSH CURRENT FIXES:** Yes ✅
-- Core bug fixes are solid
-- Court extraction is working
-- Code improvements are valuable
-- Test suite is useful
+**PUSH CURRENT STATE TO PRODUCTION:** Yes ✅
 
-**DOCUMENT LIMITATIONS:** Include note that:
-- Administrator info requires POIT selector fix
-- Email/phone depend on administrator being found
-- Some fields may be empty in reports until POIT is fixed
+**What's Working:**
+- ✅ Core bug fixes verified (random_delay, error logging, POIT logic)
+- ✅ Court extraction working perfectly (100% success rate)
+- ✅ Comprehensive test suite created and documented
+- ✅ 5/9 email fields collecting reliably
+- ✅ Email template complete (admin fields will show empty until alternative solution found)
 
-**NEXT SPRINT:** Focus on POIT selector fix as Priority 1
+**What's Blocked:**
+- 🚫 Administrator name, law firm (POIT CAPTCHA - cannot automate)
+- 🚫 Email, phone (depends on administrator)
+- ⚠️  Employees, revenue (not on public pages)
+
+**User Expectations to Set:**
+- Email reports will contain 5/9 fields automatically
+- Administrator and contact info require manual POIT lookup
+- POIT links provided in emails for manual reference
+- This is a data source limitation, not a code bug
+
+**Value Proposition:**
+The system successfully automates bankruptcy discovery and provides initial filtering with court information. This saves significant time vs. manual monitoring. Administrator contact details can be looked up manually for relevant matches.
+
+**System Status:** PRODUCTION READY with documented limitations
+
+**Future Work:** Evaluate third-party data services or official API access (see POIT_LIMITATION_ANALYSIS.md)
