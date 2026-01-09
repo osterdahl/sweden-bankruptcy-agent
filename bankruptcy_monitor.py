@@ -263,11 +263,17 @@ def parse_entry(text: str, href: str, base_url: str) -> Optional[BankruptcyRecor
                 date = parse_swedish_date(date_match.group(1))
             continue
 
-        # Business type
+        # Business type - look for SNI code + description
         if 'verksamhet' in line_lower or 'sni' in line_lower:
-            sni_match = re.search(r'(\d{5})\s+(.+)', line)
+            # Pattern: "Verksamhet (SNI) 46320 Partihandel med livsmedel"
+            sni_match = re.search(r'(?:verksamhet|sni)[^\d]*(\d{5})\s+(.+)', line, re.IGNORECASE)
             if sni_match:
                 business_type = sni_match.group(2).strip()
+            else:
+                # Sometimes it's just the description without code
+                desc_match = re.search(r'(?:verksamhet|sni)[:\s]+([^\d][^\n]+)', line, re.IGNORECASE)
+                if desc_match:
+                    business_type = desc_match.group(1).strip()
             continue
 
         # Employees
@@ -330,17 +336,42 @@ async def enrich_from_detail_page(page: Page, record: BankruptcyRecord, detail_u
                 record.administrator = match.group(1).strip()
                 break
 
-        # Extract court
+        # Extract court - be specific to avoid matching company names
         court_patterns = [
-            r'([A-ZÅÄÖ][\wåäöÅÄÖ\s]+tingsrätt)',
-            r'Tingsrätt[:\s]+([^\n]+)',
+            r'Tingsrätt[:\s]+([^\n]+)',  # Try labeled field first
+            r'\b(Stockholms tingsrätt)\b',
+            r'\b(Göteborgs tingsrätt)\b',
+            r'\b(Malmö tingsrätt)\b',
+            r'\b(Uppsala tingsrätt)\b',
+            r'\b(Linköpings tingsrätt)\b',
+            r'\b(Västerås tingsrätt)\b',
+            r'\b(Örebro tingsrätt)\b',
+            r'\b(Norrköpings tingsrätt)\b',
+            r'\b(Helsingborgs tingsrätt)\b',
+            r'\b(Jönköpings tingsrätt)\b',
+            r'\b(Umeå tingsrätt)\b',
+            r'\b(Lunds tingsrätt)\b',
+            r'\b(Borås tingsrätt)\b',
+            r'\b(Sundsvalls tingsrätt)\b',
+            r'\b(Gävle tingsrätt)\b',
+            r'\b(Eskilstuna tingsrätt)\b',
+            r'\b(Karlstads tingsrätt)\b',
+            r'\b(Växjö tingsrätt)\b',
+            r'\b(Halmstads tingsrätt)\b',
+            r'\b(Södertörns tingsrätt)\b',
+            r'\b(Attunda tingsrätt)\b',
+            # Generic pattern as last resort - must start with capital and end with tingsrätt
+            r'(?:Domstol|Tingsrätt)[:\s]*([A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\s]+tingsrätt)',
         ]
 
         for pattern in court_patterns:
-            match = re.search(pattern, text_content)
+            match = re.search(pattern, text_content, re.IGNORECASE)
             if match:
-                record.court = match.group(1).strip()
-                break
+                court_name = match.group(1).strip() if match.lastindex else match.group(0).strip()
+                # Validate it looks like a court name (not a company)
+                if 'tingsrätt' in court_name.lower() and not any(suffix in court_name for suffix in ['AB', 'HB', 'KB']):
+                    record.court = court_name
+                    break
 
     except Exception as e:
         logger.debug(f"Could not enrich from detail page: {e}")
@@ -391,19 +422,40 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
 # ============================================================================
 
 def format_email(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate plain text email report."""
+    """Generate plain text email report in table format."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
     body = f"""
 SWEDISH BANKRUPTCY REPORT - {month_name}
-{'=' * 60}
+{'=' * 100}
 
 Total bankruptcies found: {len(records)}
 
 """
 
+    # Table header
+    body += f"""
+{'#':<3} {'Company':<35} {'Org Number':<13} {'Date':<12} {'Location':<20} {'Court':<25}
+{'-'*3} {'-'*35} {'-'*13} {'-'*12} {'-'*20} {'-'*25}
+"""
+
+    # Table rows
     for i, r in enumerate(records, 1):
         date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
+        company = (r.company_name[:32] + '...') if len(r.company_name) > 35 else r.company_name
+        location = r.location or "Unknown"
+        if len(location) > 20:
+            location = location[:17] + '...'
+        court = (r.court or "Unknown")[:25]
+
+        body += f"{i:<3} {company:<35} {r.org_number:<13} {date_str:<12} {location:<20} {court:<25}\n"
+
+    # Details section
+    body += f"\n{'=' * 100}\nDETAILS\n{'=' * 100}\n\n"
+
+    for i, r in enumerate(records, 1):
+        date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
+        org_clean = r.org_number.replace('-', '')
 
         body += f"""
 {i}. {r.company_name} ({r.org_number})
@@ -411,7 +463,7 @@ Total bankruptcies found: {len(records)}
    Location: {r.location or 'Unknown'}{', ' + r.region if r.region else ''}
    Court: {r.court or 'Unknown'}
    Administrator: {r.administrator or 'Unknown'}
-   Business: {r.business_type or 'Unknown'}
+   Business Type: {r.business_type or 'Not specified'}
 """
 
         if r.employees is not None:
@@ -419,12 +471,10 @@ Total bankruptcies found: {len(records)}
         if r.revenue is not None:
             body += f"   Revenue: {r.revenue:,.0f} SEK\n"
 
-        # POIT link for manual lookup
-        org_clean = r.org_number.replace('-', '')
-        body += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
+        body += f"   POIT Link: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
 
     body += f"""
-{'=' * 60}
+{'=' * 100}
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Source: Konkurslistan.se
 """
