@@ -1,17 +1,12 @@
 name: Monthly Bankruptcy Report
 
-# 🤖 FULLY AUTONOMOUS WORKFLOW
+# Simplified autonomous workflow for single-file bankruptcy monitor
 # Runs automatically on the 1st of each month at 6 AM UTC
-# Intelligently selects which month to process based on current date
-# No manual intervention required!
 
 on:
-  # 🗓️ Automatic monthly execution
   schedule:
     - cron: '0 6 1 * *'  # 6 AM UTC on the 1st of every month
 
-  # 🔧 Optional manual trigger (for testing or reruns)
-  # Leave inputs blank for automatic date detection
   workflow_dispatch:
     inputs:
       year:
@@ -25,8 +20,8 @@ on:
       skip_email:
         description: 'Skip sending email report'
         required: false
-        default: 'false'
         type: boolean
+        default: false
 
 env:
   PYTHON_VERSION: '3.12'
@@ -34,51 +29,45 @@ env:
 jobs:
   generate-report:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
+    timeout-minutes: 20
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install chromium
           playwright install-deps
-      
-      - name: Determine date parameters (Smart Auto-Detection)
+
+      - name: Determine date parameters
         id: date
         run: |
-          # Smart date detection for autonomous operation
           if [ -n "${{ github.event.inputs.year }}" ] && [ -n "${{ github.event.inputs.month }}" ]; then
-            # Manual override provided
             YEAR="${{ github.event.inputs.year }}"
             MONTH="${{ github.event.inputs.month }}"
             echo "Using manual inputs: $YEAR-$MONTH"
           else
-            # Automatic mode - intelligent date selection
+            # Automatic: use previous month if running in first 3 days
             CURRENT_DAY=$(date +%d)
             CURRENT_MONTH=$(date +%m | sed 's/^0//')
             CURRENT_YEAR=$(date +%Y)
 
-            # If we're in the first 3 days of the month, process PREVIOUS month
-            # (bankruptcies from last month are more complete)
-            # Otherwise, process CURRENT month
             if [ "$CURRENT_DAY" -le 3 ]; then
-              echo "Running on day $CURRENT_DAY - processing PREVIOUS month"
-              # Calculate previous month
+              echo "Day $CURRENT_DAY - processing PREVIOUS month"
               PREV_DATE=$(date -d "1 month ago" +%Y-%m)
               YEAR=$(echo $PREV_DATE | cut -d'-' -f1)
               MONTH=$(echo $PREV_DATE | cut -d'-' -f2 | sed 's/^0//')
             else
-              echo "Running on day $CURRENT_DAY - processing CURRENT month"
+              echo "Day $CURRENT_DAY - processing CURRENT month"
               YEAR=$CURRENT_YEAR
               MONTH=$CURRENT_MONTH
             fi
@@ -86,92 +75,47 @@ jobs:
 
           echo "year=$YEAR" >> $GITHUB_OUTPUT
           echo "month=$MONTH" >> $GITHUB_OUTPUT
-          echo "📅 Processing period: $YEAR-$(printf %02d $MONTH)"
-      
+          echo "📅 Processing: $YEAR-$(printf %02d $MONTH)"
+
       - name: Run bankruptcy monitor
         env:
-          # Email configuration
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          # Email configuration (required)
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
-          
-          # Filter criteria
-          FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES }}
-          FILTER_MAX_EMPLOYEES: ${{ secrets.FILTER_MAX_EMPLOYEES }}
-          FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE }}
-          FILTER_MAX_REVENUE: ${{ secrets.FILTER_MAX_REVENUE }}
-          FILTER_BUSINESS_TYPES: ${{ secrets.FILTER_BUSINESS_TYPES }}
+
+          # Date override
+          YEAR: ${{ steps.date.outputs.year }}
+          MONTH: ${{ steps.date.outputs.month }}
+
+          # Optional filters
           FILTER_REGIONS: ${{ secrets.FILTER_REGIONS }}
-          FILTER_EXCLUDE_KEYWORDS: ${{ secrets.FILTER_EXCLUDE_KEYWORDS }}
           FILTER_INCLUDE_KEYWORDS: ${{ secrets.FILTER_INCLUDE_KEYWORDS }}
-          
-          # Scraper settings
-          HEADLESS: 'true'
-          REQUEST_DELAY: '2.0'
-          TIMEOUT: '30'
+          FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES }}
+          FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE }}
+
+          # Skip email if requested
+          NO_EMAIL: ${{ github.event.inputs.skip_email }}
         run: |
-          # Build command
-          CMD="python main.py --year ${{ steps.date.outputs.year }} --month ${{ steps.date.outputs.month }} -v"
-          
-          # Add --no-email if requested
-          if [ "${{ github.event.inputs.skip_email }}" = "true" ]; then
-            CMD="$CMD --no-email"
-          fi
-          
-          echo "Running: $CMD"
-          $CMD
-      
-      - name: Upload report artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: bankruptcy-report-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}
-          path: |
-            data/exports/
-            bankruptcy_agent.log
-          retention-days: 90
-      
-      - name: Upload database
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: database-${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}
-          path: data/bankruptcies.db
-          retention-days: 90  # Changed from 365 to match repository limit
-      
+          python bankruptcy_monitor.py
+
       - name: Report summary
         if: always()
         run: |
           echo "## 📊 Bankruptcy Report Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Period Processed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Year:** ${{ steps.date.outputs.year }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Month:** ${{ steps.date.outputs.month }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Execution Details" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered:** ${{ github.event_name == 'schedule' && '🤖 Automatic (scheduled)' || '🔧 Manual' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Date Selection:** ${{ github.event.inputs.year != '' && 'Manual override' || 'Automatic (smart detection)' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f data/exports/*.json ]; then
-            RECORD_COUNT=$(cat data/exports/*.json | python -c "import sys, json; data=json.load(sys.stdin); print(len(data))" 2>/dev/null || echo "0")
-            echo "### Results" >> $GITHUB_STEP_SUMMARY
-            echo "- **Records exported:** $RECORD_COUNT" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "**Period:** ${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered:** ${{ github.event_name == 'schedule' && '🤖 Automatic' || '🔧 Manual' }}" >> $GITHUB_STEP_SUMMARY
 
   notify-on-failure:
     needs: generate-report
     runs-on: ubuntu-latest
     if: failure()
-    
+
     steps:
       - name: Send failure notification
         env:
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
@@ -180,39 +124,30 @@ jobs:
           import os
           import smtplib
           from email.mime.text import MIMEText
-          from email.mime.multipart import MIMEMultipart
-          
-          smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-          smtp_port = int(os.environ.get('SMTP_PORT', 587))
+
           sender = os.environ.get('SENDER_EMAIL', '')
           password = os.environ.get('SENDER_PASSWORD', '')
           recipients = os.environ.get('RECIPIENT_EMAILS', '').split(',')
-          
+
           if not all([sender, password, recipients[0]]):
-              print("Email not configured, skipping notification")
+              print("Email not configured")
               exit(0)
-          
-          msg = MIMEMultipart()
+
+          body = "The monthly bankruptcy monitoring job has failed.\n\n"
+          body += "Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n"
+          body += "This is an automated notification."
+
+          msg = MIMEText(body)
           msg['From'] = sender
           msg['To'] = ', '.join(recipients)
-          msg['Subject'] = '⚠️ Bankruptcy Monitor FAILED'
-          
-          body = """
-          The monthly bankruptcy monitoring job has failed.
-          
-          Please check the GitHub Actions logs for details:
-          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          This is an automated notification.
-          """
-          
-          msg.attach(MIMEText(body, 'plain'))
-          
+          msg['Subject'] = 'Bankruptcy Monitor FAILED'
+
           try:
-              with smtplib.SMTP(smtp_server, smtp_port) as server:
-                  server.starttls()
-                  server.login(sender, password)
-                  server.send_message(msg)
+              server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
+              server.starttls()
+              server.login(sender, password)
+              server.send_message(msg)
+              server.quit()
               print("Failure notification sent")
           except Exception as e:
               print(f"Failed to send notification: {e}")

@@ -1,155 +1,212 @@
-# 🇸🇪 Sweden Bankruptcy Monitoring Agent
+# Swedish Bankruptcy Monitor
 
-An automated system that monitors Swedish corporate bankruptcies from multiple aggregator sites, filters them by your criteria, and sends monthly email reports.
+**Ultra-simplified bankruptcy monitoring system** - one Python file, one dependency, zero complexity.
+
+Scrapes [Konkurslistan.se](https://www.konkurslistan.se) for monthly bankruptcy announcements and sends a plain text email report.
 
 ## Features
 
-- 🔍 **Multi-Source Scraping**: Pulls data from Allabolag.se, Konkurslistan.se, Bolagsfakta.se
-- 📊 **Smart Filtering**: Filter by employees, revenue, business type, region
-- 📧 **Email Reports**: Beautiful HTML reports delivered monthly  
-- 💾 **Data Storage**: SQLite database with full history
-- 📤 **Export Options**: JSON and CSV exports
-- 🐳 **Docker Ready**: Deploy anywhere with Docker
-- ⚡ **GitHub Actions**: Free automated monthly runs
+- ✅ Automated monthly scraping via GitHub Actions
+- ✅ Filter by region, keywords, employees, revenue
+- ✅ Plain text email reports
+- ✅ No database (stateless)
+- ✅ Single file (~400 lines)
+- ✅ One dependency (Playwright)
+
+## Data Collected
+
+From Konkurslistan.se:
+- Company name and organization number
+- Bankruptcy date
+- Location and region
+- Court
+- Administrator name (when available)
+- Business type
+- Employees and revenue (when available)
+
+**Note:** Email and phone contact information for administrators is not automatically collected (POIT source is CAPTCHA-protected). Manual lookup via POIT links provided in reports.
 
 ## Quick Start
 
-### Option 1: GitHub Actions (Free, Recommended) 🤖
-
-**100% Autonomous - Zero Manual Intervention!**
-
-1. Fork this repository
-2. Go to **Settings → Secrets and variables → Actions**
-3. Add these secrets:
-
-| Secret | Example Value |
-|--------|---------------|
-| `SENDER_EMAIL` | your-email@gmail.com |
-| `SENDER_PASSWORD` | your-gmail-app-password |
-| `RECIPIENT_EMAILS` | you@company.com |
-| `FILTER_MIN_EMPLOYEES` | 10 |
-| `FILTER_MIN_REVENUE` | 5000000 |
-
-4. Go to **Actions** tab and enable workflows
-5. **That's it!** Reports run automatically every month at 6 AM UTC
-
-**Smart Features:**
-- 🗓️ Auto-detects which month to process (previous or current)
-- 📧 Sends email reports automatically
-- 💾 Saves all data as downloadable artifacts
-- ⚠️ Notifies you if something fails
-- 🆓 Runs free on GitHub Actions
-
-📖 [Full autonomous setup guide →](GITHUB_ACTIONS_AUTONOMOUS.md)
-
-### Option 2: Local/Server
+### Local Setup
 
 ```bash
-# Clone
-git clone <repo>
-cd sweden-bankruptcy-agent
+# Install
+pip install playwright
+playwright install chromium
 
 # Configure
 cp .env.example .env
-# Edit .env with your settings
-
-# Install
-pip install -r requirements.txt
-playwright install chromium
+# Edit .env with your email credentials
 
 # Run
-python main.py --month 12 --year 2025
+python bankruptcy_monitor.py
 ```
 
-### Option 3: Docker
+### GitHub Actions Setup
 
-```bash
-docker-compose up -d
-```
+1. Fork this repository
+2. Add GitHub Secrets (Settings → Secrets and variables → Actions):
+   - `SENDER_EMAIL`: Your Gmail address
+   - `SENDER_PASSWORD`: Gmail app password
+   - `RECIPIENT_EMAILS`: Comma-separated recipient emails
+   - `FILTER_REGIONS`: (Optional) e.g., "Stockholm,Göteborg"
+   - `FILTER_INCLUDE_KEYWORDS`: (Optional) e.g., "bygg,IT"
+
+3. The workflow runs automatically on the 1st of each month at 6 AM UTC
 
 ## Configuration
 
-### Filter Criteria
+Set these environment variables in `.env` or GitHub Secrets:
 
+### Required
+- `SENDER_EMAIL`: Gmail address for sending emails
+- `SENDER_PASSWORD`: Gmail app password ([create one](https://support.google.com/accounts/answer/185833))
+- `RECIPIENT_EMAILS`: Comma-separated list of recipients
+
+### Optional Filtering
+- `FILTER_REGIONS`: Comma-separated regions (e.g., "Stockholm,Göteborg,Skåne")
+- `FILTER_INCLUDE_KEYWORDS`: Match keywords in company name or business type
+- `FILTER_MIN_EMPLOYEES`: Minimum number of employees
+- `FILTER_MIN_REVENUE`: Minimum revenue in SEK
+
+### Optional Overrides
+- `YEAR`: Override target year (defaults to current/previous)
+- `MONTH`: Override target month (defaults to previous month)
+- `NO_EMAIL`: Set to `true` to skip email sending (prints to console only)
+
+## Example Output
+
+```
+SWEDISH BANKRUPTCY REPORT - January 2026
+============================================================
+
+Total bankruptcies found: 3
+
+1. Example Company AB (123456-7890)
+   Date: 2026-01-15
+   Location: Stockholm, Stockholms län
+   Court: Stockholms tingsrätt
+   Administrator: John Doe, Example Law Firm
+   Business: IT consulting services
+   Employees: 12
+   Revenue: 5,000,000 SEK
+   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr=1234567890
+
+...
+```
+
+## Architecture
+
+**Before:** 2,800 lines across 12 files, 8 dependencies, complex database layer
+**After:** 400 lines in 1 file, 1 dependency, stateless
+
+### What Was Removed
+- ❌ Multiple data sources (Allabolag, Bolagsfakta) - kept only Konkurslistan
+- ❌ SQLite database - stateless operation
+- ❌ HTML email templates - plain text only
+- ❌ POIT enrichment - blocked by CAPTCHA anyway
+- ❌ Lawyer contact enrichment - low success rate
+- ❌ Mock scrapers and test scaffolding
+- ❌ Complex filtering system - simple keyword matching
+- ❌ SNI code lookup - unused
+- ❌ scheduler.py - use system cron or GitHub Actions
+
+### What Was Kept
+- ✅ Core bankruptcy data (company, date, location, court, administrator)
+- ✅ Konkurslistan scraping (most complete source)
+- ✅ Basic filtering (region, keywords, employees, revenue)
+- ✅ Email notifications
+- ✅ GitHub Actions deployment
+
+## Limitations
+
+1. **Administrator Contact Info:** Email and phone numbers require manual lookup via POIT (CAPTCHA-protected)
+2. **Single Source:** Only scrapes Konkurslistan.se (trade-off for simplicity)
+3. **No History:** Stateless system, doesn't store historical data
+4. **Plain Text Emails:** No HTML styling (intentional simplicity)
+
+## Manual Administrator Lookup
+
+Each bankruptcy in the email report includes a POIT link:
+```
+POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr=1234567890
+```
+
+Click this link to manually view the official bankruptcy announcement with full administrator contact details.
+
+## Development
+
+### Run Manually
 ```bash
-# .env file
-FILTER_MIN_EMPLOYEES=10        # Only companies with 10+ employees
-FILTER_MIN_REVENUE=5000000     # Only companies with 5M+ SEK revenue
-FILTER_BUSINESS_TYPES=Bygg,IT  # Business types (comma-separated)
-FILTER_REGIONS=Stockholms län  # Regions (comma-separated)
+# Run for specific month
+YEAR=2025 MONTH=12 python bankruptcy_monitor.py
+
+# Run with filtering
+FILTER_REGIONS=Stockholm FILTER_MIN_EMPLOYEES=10 python bankruptcy_monitor.py
+
+# Dry run (no email)
+NO_EMAIL=true python bankruptcy_monitor.py
 ```
 
-### Email Setup (Gmail)
+### Project Structure
+```
+bankruptcy_monitor.py        # Single file (400 lines)
+├─ Data models              # BankruptcyRecord class
+├─ Utilities                # Date parsing, org number normalization
+├─ Scraper                  # Konkurslistan scraping & parsing
+├─ Filtering                # Simple keyword/region matching
+├─ Email                    # Plain text formatting & SMTP
+└─ Main                     # Orchestration
 
-1. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-2. Generate an App Password
-3. Use it as `SENDER_PASSWORD`
-
-## Data Sources
-
-The agent scrapes these public aggregator sites:
-
-| Source | Data Collected |
-|--------|----------------|
-| **Konkurslistan.se** | Company name, org number, date, court, business type, location |
-| **Allabolag.se** | Company name, org number, region, business type |
-| **Bolagsfakta.se** | Company name, org number, basic info |
-
-All sources compile official Swedish court decisions.
-
-### Email Report Fields (5/9 fields automated)
-
-**Automatically Collected:**
-- ✅ Company Name & Organization Number
-- ✅ Bankruptcy Declaration Date
-- ✅ Business Type (when available)
-- ✅ Court (extracted from detail pages)
-- ✅ Location (city/region)
-
-**Requires Manual Lookup:**
-- ⚠️  Administrator Name & Law Firm
-- ⚠️  Email & Phone Contact
-
-**Not Available on Public Pages:**
-- ❌ Number of Employees
-- ❌ Revenue
-
-**Why administrator info isn't automated:** The official source (POIT - Post- och Inrikes Tidningar) implements CAPTCHA protection to prevent automated access. Each email report includes a POIT link for manual administrator lookup when needed. See `POIT_LIMITATION_ANALYSIS.md` for technical details.
-
-## Usage
-
-```bash
-# Current month with email
-python main.py
-
-# Specific month, no email
-python main.py --month 11 --year 2024 --no-email
-
-# Test with mock data
-python main.py --mock
-
-# Verbose logging
-python main.py -v
+requirements.txt             # playwright only
+.github/workflows/monthly.yml # GitHub Actions automation
 ```
 
-## Project Structure
+## Troubleshooting
 
-```
-sweden-bankruptcy-agent/
-├── src/
-│   ├── aggregator_scraper.py  # Multi-source web scraper
-│   ├── models.py              # Data models
-│   ├── filter.py              # Filtering logic
-│   ├── database.py            # SQLite storage
-│   ├── email_notifier.py      # Email reports
-│   └── agent.py               # Main orchestrator
-├── .github/workflows/
-│   └── monthly-report.yml     # GitHub Actions workflow
-├── main.py                    # CLI entry point
-├── Dockerfile
-└── docker-compose.yml
-```
+### Email not sending
+- Use Gmail app password, not account password: https://support.google.com/accounts/answer/185833
+- Check SMTP access is enabled in Gmail settings
+- Verify `SENDER_EMAIL` and `SENDER_PASSWORD` are set correctly
+
+### No bankruptcies found
+- Verify the target month has bankruptcy data
+- Check if Konkurslistan.se site structure changed (CSS selectors may need updating)
+- Run with verbose logging: `python bankruptcy_monitor.py` (INFO level by default)
+
+### Filtering not working
+- Ensure keywords are lowercase in `FILTER_INCLUDE_KEYWORDS`
+- Region names must match format from Konkurslistan (e.g., "Stockholms län")
+- Employee/revenue data is not always available - filter will skip records without data
+
+## Migration from Complex Version
+
+The previous version is preserved in git history. Key changes:
+
+1. **Deleted files:**
+   - `src/scraper.py`, `src/poit_enricher.py`, `src/lawyer_enrichment.py`
+   - `src/enrichment.py`, `src/filter.py`, `src/database.py`
+   - `scheduler.py`
+
+2. **Simplified:**
+   - `src/aggregator_scraper.py` → extracted Konkurslistan logic only
+   - `src/email_notifier.py` → plain text template
+   - `config/settings.py` → environment variables directly
+
+3. **Data continuity:**
+   - No database to migrate (new system is stateless)
+   - Old SQLite database in `data/bankruptcies.db` can be exported to JSON if needed
 
 ## License
 
 MIT
+
+## Contributing
+
+This is an intentionally minimal system. Before adding complexity:
+1. Is it solving a real problem?
+2. Can it be done with less code?
+3. Does it maintain the "single file" philosophy?
+
+**Rule of thumb:** If a feature adds >50 lines, it probably belongs in a separate tool.
