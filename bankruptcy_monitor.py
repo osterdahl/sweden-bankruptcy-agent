@@ -15,6 +15,7 @@ import re
 import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
 from urllib.parse import urljoin
 
@@ -249,12 +250,19 @@ def parse_entry(text: str, href: str, base_url: str) -> Optional[BankruptcyRecor
             company_name = line.strip()
             continue
 
-        # Location: "City, Region län"
-        if ',' in line and 'län' in line_lower:
+        # Location: "City, Region län" or just "City"
+        if not location and ',' in line and 'län' in line_lower:
             parts = line.split(',')
             location = parts[0].strip()
             region = parts[1].strip() if len(parts) > 1 else ""
             continue
+
+        # Sometimes location is just city name on a line by itself
+        if not location and not company_name and len(line) > 3 and len(line) < 50:
+            # Check if it looks like a city name (capitalized, not a date or number)
+            if line[0].isupper() and not re.match(r'^\d', line) and 'datum' not in line_lower:
+                # This might be location, but keep looking for company name first
+                pass
 
         # Date
         if 'datum' in line_lower or re.match(r'^\d{4}-\d{2}-\d{2}$', line):
@@ -421,43 +429,233 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
 # EMAIL
 # ============================================================================
 
-def format_email(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate plain text email report in table format."""
+def format_email_html(records: List[BankruptcyRecord], year: int, month: int) -> str:
+    """Generate beautiful HTML email report with table."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
-    body = f"""
-SWEDISH BANKRUPTCY REPORT - {month_name}
-{'=' * 100}
-
-Total bankruptcies found: {len(records)}
-
-"""
-
-    # Table header
-    body += f"""
-{'#':<3} {'Company':<35} {'Org Number':<13} {'Date':<12} {'Location':<20} {'Court':<25}
-{'-'*3} {'-'*35} {'-'*13} {'-'*12} {'-'*20} {'-'*25}
-"""
-
-    # Table rows
+    # Generate table rows
+    table_rows = ""
     for i, r in enumerate(records, 1):
         date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
-        company = (r.company_name[:32] + '...') if len(r.company_name) > 35 else r.company_name
-        location = r.location or "Unknown"
-        if len(location) > 20:
-            location = location[:17] + '...'
-        court = (r.court or "Unknown")[:25]
+        row_class = "even" if i % 2 == 0 else "odd"
 
-        body += f"{i:<3} {company:<35} {r.org_number:<13} {date_str:<12} {location:<20} {court:<25}\n"
+        # Details for expandable section
+        details = []
+        if r.administrator:
+            details.append(f"<strong>Administrator:</strong> {r.administrator}")
+        if r.business_type:
+            details.append(f"<strong>Business Type:</strong> {r.business_type}")
+        if r.employees is not None:
+            details.append(f"<strong>Employees:</strong> {r.employees}")
+        if r.revenue is not None:
+            details.append(f"<strong>Revenue:</strong> {r.revenue:,.0f} SEK")
 
-    # Details section
-    body += f"\n{'=' * 100}\nDETAILS\n{'=' * 100}\n\n"
+        details_html = " &nbsp;|&nbsp; ".join(details) if details else "No additional details"
+
+        org_clean = r.org_number.replace('-', '')
+        poit_link = f"https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}"
+
+        location_display = r.location or "Unknown"
+        if r.region and r.region != location_display:
+            location_display += f", {r.region}"
+
+        table_rows += f"""
+        <tr class="{row_class}">
+            <td style="text-align: center;">{i}</td>
+            <td><strong>{r.company_name}</strong></td>
+            <td style="text-align: center;"><code>{r.org_number}</code></td>
+            <td style="text-align: center;">{date_str}</td>
+            <td>{location_display}</td>
+            <td>{r.court or 'Unknown'}</td>
+            <td style="text-align: center;">
+                <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
+            </td>
+        </tr>
+        <tr class="{row_class}-detail">
+            <td colspan="7" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
+                {details_html}
+            </td>
+        </tr>
+        """
+
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }}
+        .container {{
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }}
+        .header h1 {{
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 600;
+        }}
+        .header p {{
+            margin: 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }}
+        .summary {{
+            background: #f8fafc;
+            padding: 20px 30px;
+            border-bottom: 2px solid #e5e7eb;
+        }}
+        .summary-stat {{
+            display: inline-block;
+            margin-right: 30px;
+            font-size: 14px;
+        }}
+        .summary-stat strong {{
+            color: #1e3a8a;
+            font-size: 24px;
+            display: block;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }}
+        th {{
+            background: #1e40af;
+            color: white;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        th:first-child {{
+            text-align: center;
+        }}
+        td {{
+            padding: 12px 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }}
+        tr.odd {{
+            background: #ffffff;
+        }}
+        tr.even {{
+            background: #f9fafb;
+        }}
+        tr.odd-detail, tr.even-detail {{
+            background: #fafafa;
+        }}
+        tr:hover.odd, tr:hover.even {{
+            background: #eff6ff;
+        }}
+        code {{
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #334155;
+        }}
+        a {{
+            color: #0066cc;
+            text-decoration: none;
+        }}
+        a:hover {{
+            text-decoration: underline;
+        }}
+        .footer {{
+            background: #f8fafc;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 2px solid #e5e7eb;
+        }}
+        .footer a {{
+            color: #3b82f6;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇸🇪 Swedish Bankruptcy Report</h1>
+            <p>{month_name}</p>
+        </div>
+
+        <div class="summary">
+            <div class="summary-stat">
+                <strong>{len(records)}</strong>
+                <span>Total Bankruptcies</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th style="width: 25%;">Company</th>
+                    <th style="width: 120px;">Org Number</th>
+                    <th style="width: 100px;">Date</th>
+                    <th style="width: 18%;">Location</th>
+                    <th style="width: 20%;">Court</th>
+                    <th style="width: 70px;">Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                {table_rows}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} UTC</p>
+            <p>Data source: <a href="https://www.konkurslistan.se">Konkurslistan.se</a></p>
+            <p style="margin-top: 10px; font-size: 11px;">
+                Automated bankruptcy monitoring •
+                <a href="https://poit.bolagsverket.se">POIT Official Gazette</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+    """
+
+    return html
+
+
+def format_email_plain(records: List[BankruptcyRecord], year: int, month: int) -> str:
+    """Generate plain text email report as fallback."""
+    month_name = datetime(year, month, 1).strftime("%B %Y")
+
+    text = f"""
+SWEDISH BANKRUPTCY REPORT - {month_name}
+{'=' * 80}
+
+Total bankruptcies: {len(records)}
+
+"""
 
     for i, r in enumerate(records, 1):
         date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
         org_clean = r.org_number.replace('-', '')
 
-        body += f"""
+        text += f"""
 {i}. {r.company_name} ({r.org_number})
    Date: {date_str}
    Location: {r.location or 'Unknown'}{', ' + r.region if r.region else ''}
@@ -467,23 +665,23 @@ Total bankruptcies found: {len(records)}
 """
 
         if r.employees is not None:
-            body += f"   Employees: {r.employees}\n"
+            text += f"   Employees: {r.employees}\n"
         if r.revenue is not None:
-            body += f"   Revenue: {r.revenue:,.0f} SEK\n"
+            text += f"   Revenue: {r.revenue:,.0f} SEK\n"
 
-        body += f"   POIT Link: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
+        text += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
 
-    body += f"""
-{'=' * 100}
+    text += f"""
+{'=' * 80}
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Source: Konkurslistan.se
 """
 
-    return body
+    return text
 
 
-def send_email(subject: str, body: str):
-    """Send plain text email via SMTP."""
+def send_email(subject: str, html_body: str, plain_body: str):
+    """Send HTML email with plain text fallback via SMTP."""
     sender_email = os.getenv('SENDER_EMAIL')
     sender_password = os.getenv('SENDER_PASSWORD')
     recipient_emails = os.getenv('RECIPIENT_EMAILS', '')
@@ -496,10 +694,18 @@ def send_email(subject: str, body: str):
         logger.error("No recipients configured (RECIPIENT_EMAILS)")
         return
 
-    msg = MIMEText(body, 'plain', 'utf-8')
+    # Create multipart message with HTML and plain text
+    msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = sender_email
     msg['To'] = recipient_emails
+
+    # Attach plain text and HTML versions
+    part1 = MIMEText(plain_body, 'plain', 'utf-8')
+    part2 = MIMEText(html_body, 'html', 'utf-8')
+
+    msg.attach(part1)
+    msg.attach(part2)
 
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
@@ -532,6 +738,8 @@ async def main():
     logger.info(f"=== Swedish Bankruptcy Monitor ===")
     logger.info(f"Processing: {year}-{month:02d}")
 
+    month_name = datetime(year, month, 1).strftime("%B %Y")
+
     # Step 1: Scrape
     records = await scrape_konkurslistan(year, month)
 
@@ -548,15 +756,16 @@ async def main():
         return
 
     # Step 3: Email
-    subject = f"Swedish Bankruptcies - {month:02d}/{year}"
-    body = format_email(filtered, year, month)
+    subject = f"🇸🇪 Swedish Bankruptcies - {month_name}"
+    html_body = format_email_html(filtered, year, month)
+    plain_body = format_email_plain(filtered, year, month)
 
-    # Print to console
-    print("\n" + body)
+    # Print plain text to console
+    print("\n" + plain_body)
 
     # Send email
     if os.getenv('NO_EMAIL') != 'true':
-        send_email(subject, body)
+        send_email(subject, html_body, plain_body)
     else:
         logger.info("Email sending skipped (NO_EMAIL=true)")
 
