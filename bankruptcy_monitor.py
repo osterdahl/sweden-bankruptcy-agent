@@ -439,12 +439,10 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
         row_class = "even" if i % 2 == 0 else "odd"
 
-        # Details for expandable section
+        # Details for expandable section (secondary info only)
         details = []
         if r.administrator:
             details.append(f"<strong>Administrator:</strong> {r.administrator}")
-        if r.business_type:
-            details.append(f"<strong>Business Type:</strong> {r.business_type}")
         if r.employees is not None:
             details.append(f"<strong>Employees:</strong> {r.employees}")
         if r.revenue is not None:
@@ -467,12 +465,13 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             <td style="text-align: center;">{date_str}</td>
             <td>{location_display}</td>
             <td>{r.court or 'Unknown'}</td>
+            <td>{r.business_type or 'Not specified'}</td>
             <td style="text-align: center;">
                 <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
             </td>
         </tr>
         <tr class="{row_class}-detail">
-            <td colspan="7" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
+            <td colspan="8" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
                 {details_html}
             </td>
         </tr>
@@ -610,11 +609,12 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             <thead>
                 <tr>
                     <th style="width: 40px;">#</th>
-                    <th style="width: 25%;">Company</th>
+                    <th style="width: 20%;">Company</th>
                     <th style="width: 120px;">Org Number</th>
                     <th style="width: 100px;">Date</th>
-                    <th style="width: 18%;">Location</th>
-                    <th style="width: 20%;">Court</th>
+                    <th style="width: 15%;">Location</th>
+                    <th style="width: 15%;">Court</th>
+                    <th style="width: 20%;">Business Type</th>
                     <th style="width: 70px;">Link</th>
                 </tr>
             </thead>
