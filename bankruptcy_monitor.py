@@ -74,6 +74,7 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
             logger.info(f'  Found {len(cards)} cards on page {page_num}')
 
             page_had_target_month = False
+            found_past_target = False
 
             for card in cards:
                 try:
@@ -95,8 +96,10 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     if init_month == month and init_year == year:
                         page_had_target_month = True
                     elif init_month < month and init_year == year:
+                        found_past_target = True
                         break
                     elif init_year < year:
+                        found_past_target = True
                         break
                     elif not (init_month == month and init_year == year):
                         continue
@@ -114,15 +117,12 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     region = region_elem.inner_text().strip() if region_elem else 'N/A'
 
                     # Extract court
-                    court_labels = card.query_selector_all('.bankruptcy-card__detail .bankruptcy-card__label')
-                    court = 'N/A'
-                    for label in court_labels:
-                        if 'Court:' in label.inner_text():
-                            court_value = label.evaluate('node => node.parentElement.querySelector(".bankruptcy-card__value")')
-                            if court_value:
-                                court_text = court_value.inner_text().strip()
-                                court = court_text.split('\n')[0]
-                            break
+                    court_elem = card.query_selector('.bankruptcy-card__court .bankruptcy-card__value')
+                    if court_elem:
+                        court_text = court_elem.inner_text().strip()
+                        court = court_text.split('\n')[0]
+                    else:
+                        court = 'N/A'
 
                     # Extract SNI code and industry
                     sni_items = card.query_selector_all('.bankruptcy-card__sni-item')
@@ -190,12 +190,18 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     ))
 
                 except Exception as e:
-                    logger.debug(f'Error processing card: {e}')
+                    logger.warning(f'Error processing card: {e}')
                     continue
 
-            if not page_had_target_month:
-                logger.info(f'No more bankruptcies from {year}-{month:02d}')
+            # Stop pagination if we've passed the target month
+            if found_past_target:
+                logger.info(f'Passed target month {year}-{month:02d}, stopping pagination')
                 break
+
+            # Continue if we haven't found target month yet (still in future months)
+            if not page_had_target_month:
+                logger.debug(f'No matches on page {page_num}, continuing to next page')
+                continue
 
         browser.close()
 
@@ -533,13 +539,16 @@ def main():
     logger.info("=== Swedish Bankruptcy Monitor (TIC.io) ===")
 
     # Determine target month
-    year = int(os.getenv('YEAR', datetime.now().year))
-    month = int(os.getenv('MONTH', datetime.now().month))
+    year_env = os.getenv('YEAR')
+    month_env = os.getenv('MONTH')
 
-    # Auto-select previous month if in first 3 days
-    if month == datetime.now().month and datetime.now().day <= 3:
+    year = int(year_env) if year_env else datetime.now().year
+    month = int(month_env) if month_env else datetime.now().month
+
+    # Auto-select previous month if in first 7 days (only when not explicitly set)
+    if not month_env and not year_env and datetime.now().day <= 7:
         month = month - 1 if month > 1 else 12
-        year = year if month != 12 else year - 1
+        year = year - 1 if month == 12 else year
 
     logger.info(f"Processing: {year}-{month:02d}")
 
