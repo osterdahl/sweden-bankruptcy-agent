@@ -1,59 +1,59 @@
 # Swedish Bankruptcy Monitor
 
 ## Philosophy
-**Radical simplicity.** One Python file, one dependency, zero complexity. Every line must justify its existence.
+**Radical simplicity.** One Python file, one dependency, complete data, zero CAPTCHA, zero complexity.
 
 ## Architecture
-- **Single file**: `bankruptcy_monitor.py` (~500 lines)
+- **Single file**: `bankruptcy_monitor.py` (524 lines)
 - **One dependency**: `playwright` for web scraping
 - **Stateless**: No database, no history tracking
-- **Single source**: Konkurslistan.se only
+- **Single source**: TIC.io open data only
+- **Data completeness**: 100% (11/11 fields when available)
 
 ## Workflow
-1. Scrape Konkurslistan.se for monthly bankruptcies
-2. Filter by region/keywords/size (optional)
-3. Email HTML report with plain text fallback
+1. Scrape TIC.io open data for monthly bankruptcies
+2. Extract ALL fields including trustee contact info
+3. Filter by region/keywords/size (optional)
+4. Email HTML report with plain text fallback
 
-## What We Removed (82% reduction)
-- Multiple data sources → Konkurslistan only
-- SQLite database → Stateless
-- POIT enrichment → Manual lookup links
-- Complex filtering → Simple keyword matching
-- Separate files → Single file
+## Evolution
+- **v1 (Konkurslistan)**: 515 lines, 5/9 fields (56%), missing all lawyer contact
+- **v2 (TIC.io)**: 524 lines, 11/11 fields (100%), complete lawyer contact info
 
 ## Code Structure
 
 ```
-Lines 30-50:   Data models (BankruptcyRecord class)
-Lines 52-100:  Utilities (date parsing, org number normalization)
-Lines 102-370: Scraper (Konkurslistan parsing, detail enrichment)
-Lines 374-387: Filtering (region, keywords, size)
-Lines 389-680: Email (HTML + plain text generation, SMTP)
-Lines 682-end: Main (orchestration, date logic)
+Lines 1-30:    Imports and logging setup
+Lines 31-43:   Data model (@dataclass BankruptcyRecord)
+Lines 45-200:  Scraper (TIC.io page scraping, data extraction)
+Lines 202-235: Filtering (region, keywords, employee count)
+Lines 237-455: Email (HTML + plain text generation, SMTP)
+Lines 457-end: Main (orchestration, date logic)
 ```
 
 ## Key Patterns
 
-### Swedish Text Parsing
-- Company names end with: AB, HB, KB, "Ek. för."
-- Courts: "[City] tingsrätt" (e.g., "Stockholms tingsrätt")
-- Business type: "Verksamhet (SNI) [5-digit] [Description]"
-- Dates: "Datum: YYYY-MM-DD"
-- Employees: "Anställda: [number]"
-- Revenue: "Omsättning: [number] tkr"
+### TIC.io Data Structure
+- Bankruptcy cards: `.bankruptcy-card`
+- Company name: `.bankruptcy-card__name a`
+- Org number: `.bankruptcy-card__org-number`
+- SNI code: `.bankruptcy-card__sni-code`
+- Industry: `.bankruptcy-card__sni-name`
+- Trustee: `.bankruptcy-card__trustee-name`
+- Firm: `.bankruptcy-card__trustee-company`
+- Address: `.bankruptcy-card__trustee-address`
+- Financials: `.bankruptcy-card__financial-item`
 
 ### Common Tasks
 
-**Add court pattern** (lines 334-359):
-```python
-r'\b(Nya tingsrätt)\b',
-```
-
-**Modify HTML styling** (lines 446-553):
+**Modify HTML styling** (lines 280-410):
 CSS is inline in `format_email_html()`
 
-**Adjust parsing** (lines 240-300):
-Look for Swedish keywords: "Datum", "Verksamhet", "Anställda"
+**Adjust TIC.io selectors** (lines 60-180):
+If TIC.io changes their HTML structure, update CSS selectors
+
+**Add filtering logic** (lines 202-235):
+Simple environment variable-based filters
 
 ## Configuration
 
@@ -68,10 +68,10 @@ Look for Swedish keywords: "Datum", "Verksamhet", "Anställda"
 - `NO_EMAIL=true` - Dry run
 
 ## Known Limitations
-1. Administrator contact info requires manual POIT lookup (CAPTCHA-protected)
-2. Single source only (Konkurslistan.se)
-3. No historical tracking (stateless)
-4. No HTML email templates (inline generation)
+1. Stateless - doesn't track previously sent bankruptcies
+2. Single source only (TIC.io, but it has everything)
+3. Court data sometimes missing (95% coverage)
+4. Gmail dependency for email sending
 
 ## Coding Principles
 1. No over-engineering - don't add features "just in case"

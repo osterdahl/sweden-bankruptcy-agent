@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-Swedish Bankruptcy Monitor - Simplified Single-File Version
+Swedish Bankruptcy Monitor - TIC.io Version
 
-Scrapes Konkurslistan.se for monthly bankruptcy announcements,
-filters by keywords and region, sends plain text email report.
+Scrapes TIC.io open data for monthly bankruptcy announcements.
+Single source, complete data, no CAPTCHA, radical simplicity.
 
-No database. No HTML styling. No enrichment. Just the essentials.
+Data source: https://tic.io/en/oppna-data/konkurser (free, public)
 """
 
-import asyncio
 import logging
 import os
 import re
@@ -17,9 +16,9 @@ from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import List, Optional
-from urllib.parse import urljoin
+from dataclasses import dataclass
 
-from playwright.async_api import async_playwright, Browser, Page
+from playwright.sync_api import sync_playwright
 
 # Configure logging
 logging.basicConfig(
@@ -33,356 +32,174 @@ logger = logging.getLogger(__name__)
 # DATA MODELS
 # ============================================================================
 
+@dataclass
 class BankruptcyRecord:
-    """Simple bankruptcy record."""
-
-    def __init__(
-        self,
-        company_name: str,
-        org_number: str,
-        date: Optional[datetime] = None,
-        location: str = "",
-        region: str = "",
-        court: str = "",
-        business_type: str = "",
-        administrator: str = "",
-        employees: Optional[int] = None,
-        revenue: Optional[float] = None,
-    ):
-        self.company_name = company_name
-        self.org_number = org_number
-        self.date = date
-        self.location = location
-        self.region = region
-        self.court = court
-        self.business_type = business_type
-        self.administrator = administrator
-        self.employees = employees
-        self.revenue = revenue
-
-
-# ============================================================================
-# UTILITIES
-# ============================================================================
-
-def normalize_org_number(org_nr: str) -> str:
-    """Normalize Swedish organization number to NNNNNN-NNNN format."""
-    if not org_nr:
-        return ""
-    digits = re.sub(r'\D', '', org_nr)
-    if len(digits) == 10:
-        return f"{digits[:6]}-{digits[6:]}"
-    return org_nr
-
-
-def parse_swedish_date(date_str: str) -> Optional[datetime]:
-    """Parse Swedish date formats."""
-    if not date_str:
-        return None
-
-    date_str = date_str.strip()
-
-    # Swedish month names
-    swedish_months = {
-        "januari": "01", "februari": "02", "mars": "03", "april": "04",
-        "maj": "05", "juni": "06", "juli": "07", "augusti": "08",
-        "september": "09", "oktober": "10", "november": "11", "december": "12",
-    }
-
-    # Replace Swedish month names with numbers
-    date_lower = date_str.lower()
-    for sv_month, num in swedish_months.items():
-        if sv_month in date_lower:
-            date_str = re.sub(sv_month, num, date_lower, flags=re.IGNORECASE)
-            break
-
-    # Try common formats
-    formats = ["%Y-%m-%d", "%d %m %Y", "%Y%m%d"]
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
-
-    # Try extracting YYYY-MM-DD pattern
-    match = re.search(r'(\d{4}-\d{2}-\d{2})', date_str)
-    if match:
-        try:
-            return datetime.strptime(match.group(1), "%Y-%m-%d")
-        except ValueError:
-            pass
-
-    return None
+    """Bankruptcy record from TIC.io."""
+    company_name: str
+    org_number: str
+    initiated_date: str
+    court: str
+    sni_code: str
+    industry_name: str
+    trustee: str
+    trustee_firm: str
+    trustee_address: str
+    employees: str
+    net_sales: str
+    total_assets: str
+    region: str = ""
 
 
 # ============================================================================
 # SCRAPER
 # ============================================================================
 
-async def scrape_konkurslistan(year: int, month: int) -> List[BankruptcyRecord]:
-    """
-    Scrape Konkurslistan.se for bankruptcies in given year/month.
+def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[BankruptcyRecord]:
+    """Scrape TIC.io bankruptcies for specified year/month."""
+    results = []
 
-    Returns list of BankruptcyRecord objects.
-    """
-    base_url = "https://www.konkurslistan.se"
-    list_url = "https://www.konkurslistan.se/alla-konkurser"
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-    records = []
-    seen_org_numbers = set()
+        for page_num in range(1, max_pages + 1):
+            logger.info(f'Fetching TIC.io page {page_num}...')
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+            url = f'https://tic.io/en/oppna-data/konkurser?pageNumber={page_num}&pageSize=100&q=&sortBy=initiatedDate%3Adesc'
+            page.goto(url, timeout=60000)
+            page.wait_for_selector('.bankruptcy-card', timeout=10000)
+            page.wait_for_timeout(1000)
 
-        try:
-            logger.info(f"Fetching {list_url}...")
-            await page.goto(list_url, timeout=30000)
-            await page.wait_for_load_state('networkidle', timeout=30000)
-            await asyncio.sleep(2)  # Let JS render
+            cards = page.query_selector_all('.bankruptcy-card')
+            logger.info(f'  Found {len(cards)} cards on page {page_num}')
 
-            # Find all bankruptcy entries (links to /konkurser/{org_number})
-            entries = await page.query_selector_all('a[href*="/konkurser/"]')
-            logger.info(f"Found {len(entries)} potential entries")
+            page_had_target_month = False
 
-            # Collect entry data
-            entry_data_list = []
-            for entry in entries[:150]:  # Limit to first 150
+            for card in cards:
                 try:
-                    text = await entry.inner_text()
-                    href = await entry.get_attribute('href')
+                    # Extract initiated date
+                    date_value = card.query_selector('.bankruptcy-card__dates .bankruptcy-card__value')
+                    initiated_date = date_value.inner_text().strip() if date_value else None
 
-                    if not href or 'page=' in href or len(text) < 20:
+                    if not initiated_date:
                         continue
 
-                    entry_data_list.append((text, href))
-                except Exception as e:
-                    logger.debug(f"Error collecting entry: {e}")
-                    continue
-
-            # Parse each entry
-            for text, href in entry_data_list:
-                try:
-                    record = parse_entry(text, href, base_url)
-
-                    if not record:
+                    # Parse and filter by month/year
+                    parts = initiated_date.split('/')
+                    if len(parts) != 3:
                         continue
 
-                    # Filter by year/month
-                    if record.date:
-                        if record.date.year != year or record.date.month != month:
+                    init_month = int(parts[0])
+                    init_year = int(parts[2])
+
+                    if init_month == month and init_year == year:
+                        page_had_target_month = True
+                    elif init_month < month and init_year == year:
+                        break
+                    elif init_year < year:
+                        break
+                    elif not (init_month == month and init_year == year):
+                        continue
+
+                    # Extract company name
+                    name_elem = card.query_selector('.bankruptcy-card__name a')
+                    company_name = name_elem.inner_text().strip() if name_elem else 'N/A'
+
+                    # Extract org number
+                    org_elem = card.query_selector('.bankruptcy-card__org-number')
+                    org_number = org_elem.inner_text().strip() if org_elem else 'N/A'
+
+                    # Extract region
+                    region_elem = card.query_selector('.bankruptcy-card__detail .bankruptcy-card__value')
+                    region = region_elem.inner_text().strip() if region_elem else 'N/A'
+
+                    # Extract court
+                    court_labels = card.query_selector_all('.bankruptcy-card__detail .bankruptcy-card__label')
+                    court = 'N/A'
+                    for label in court_labels:
+                        if 'Court:' in label.inner_text():
+                            court_value = label.evaluate('node => node.parentElement.querySelector(".bankruptcy-card__value")')
+                            if court_value:
+                                court_text = court_value.inner_text().strip()
+                                court = court_text.split('\n')[0]
+                            break
+
+                    # Extract SNI code and industry
+                    sni_items = card.query_selector_all('.bankruptcy-card__sni-item')
+                    sni_code = 'N/A'
+                    industry_name = 'N/A'
+
+                    if sni_items and len(sni_items) > 0:
+                        first_sni = sni_items[0]
+                        code_elem = first_sni.query_selector('.bankruptcy-card__sni-code')
+                        name_elem = first_sni.query_selector('.bankruptcy-card__sni-name')
+                        if code_elem:
+                            sni_code = code_elem.inner_text().strip() or 'N/A'
+                        if name_elem:
+                            industry_name = name_elem.inner_text().strip() or 'N/A'
+
+                    # Extract trustee
+                    trustee_name_elem = card.query_selector('.bankruptcy-card__trustee-name')
+                    trustee = trustee_name_elem.inner_text().strip() if trustee_name_elem else 'N/A'
+
+                    trustee_firm_elem = card.query_selector('.bankruptcy-card__trustee-company')
+                    trustee_firm = trustee_firm_elem.inner_text().strip() if trustee_firm_elem else 'N/A'
+                    trustee_firm = re.sub(r'^c/o\s+', '', trustee_firm)
+
+                    # Extract trustee address
+                    address_elem = card.query_selector('.bankruptcy-card__trustee-address')
+                    trustee_address = address_elem.inner_text().strip().replace('\n', ', ') if address_elem else 'N/A'
+
+                    # Extract financial data
+                    financial_items = card.query_selector_all('.bankruptcy-card__financial-item')
+                    employees = 'N/A'
+                    net_sales = 'N/A'
+                    total_assets = 'N/A'
+
+                    for item in financial_items:
+                        label = item.query_selector('.bankruptcy-card__financial-label')
+                        value = item.query_selector('.bankruptcy-card__financial-value')
+
+                        if not label or not value:
                             continue
 
-                    # Deduplicate
-                    if record.org_number in seen_org_numbers:
-                        continue
-                    seen_org_numbers.add(record.org_number)
+                        label_text = label.inner_text().strip()
+                        value_text = value.inner_text().strip()
 
-                    # Enrich with detail page (for administrator and court)
-                    detail_url = urljoin(base_url, href)
-                    await enrich_from_detail_page(page, record, detail_url)
+                        if 'Number of employees' in label_text:
+                            employees = value_text
+                        elif 'Net sales' in label_text:
+                            net_sales = value_text
+                        elif 'Total assets' in label_text:
+                            total_assets = value_text
 
-                    records.append(record)
-                    logger.info(f"  ✓ {record.company_name} ({record.org_number})")
+                    results.append(BankruptcyRecord(
+                        company_name=company_name,
+                        org_number=org_number,
+                        initiated_date=initiated_date,
+                        court=court,
+                        sni_code=sni_code,
+                        industry_name=industry_name,
+                        trustee=trustee,
+                        trustee_firm=trustee_firm,
+                        trustee_address=trustee_address,
+                        employees=employees,
+                        net_sales=net_sales,
+                        total_assets=total_assets,
+                        region=region
+                    ))
 
                 except Exception as e:
-                    logger.debug(f"Error parsing entry: {e}")
+                    logger.debug(f'Error processing card: {e}')
                     continue
 
-        finally:
-            await browser.close()
-
-    logger.info(f"Scraped {len(records)} bankruptcies for {year}-{month:02d}")
-    return records
-
-
-def parse_entry(text: str, href: str, base_url: str) -> Optional[BankruptcyRecord]:
-    """
-    Parse a Konkurslistan entry.
-
-    Format:
-        5567665616
-        Company Name AB
-        City, Region län
-        Datum 2025-12-23
-        Status Konkurs inledd
-        Verksamhet (SNI) 46320 Description
-        Anställda 1
-        Omsättning 1359000
-    """
-    if not text or len(text) < 20:
-        return None
-
-    lines = [l.strip() for l in text.split('\n') if l.strip()]
-
-    # Extract org number from URL
-    org_number = ""
-    if href:
-        org_match = re.search(r'/konkurser/(\d{10})', href)
-        if org_match:
-            org_number = normalize_org_number(org_match.group(1))
-
-    # If not in URL, try first line
-    if not org_number:
-        for line in lines:
-            if re.match(r'^\d{10}$', line.replace('-', '')):
-                org_number = normalize_org_number(line)
+            if not page_had_target_month:
+                logger.info(f'No more bankruptcies from {year}-{month:02d}')
                 break
 
-    # Extract fields
-    company_name = None
-    location = ""
-    region = ""
-    date = None
-    business_type = ""
-    employees = None
-    revenue = None
+        browser.close()
 
-    for i, line in enumerate(lines):
-        line_lower = line.lower()
-
-        # Skip org number line
-        if re.match(r'^\d{10}$', line.replace('-', '')):
-            continue
-
-        # Company name (ends with AB, HB, KB, etc.)
-        if not company_name and re.search(r'\b(AB|HB|KB|Ek\.?\s*för\.?)\b', line):
-            company_name = line.strip()
-            continue
-
-        # Location: "City, Region län" or just "City"
-        if not location and ',' in line and 'län' in line_lower:
-            parts = line.split(',')
-            location = parts[0].strip()
-            region = parts[1].strip() if len(parts) > 1 else ""
-            continue
-
-        # Sometimes location is just city name on a line by itself
-        if not location and not company_name and len(line) > 3 and len(line) < 50:
-            # Check if it looks like a city name (capitalized, not a date or number)
-            if line[0].isupper() and not re.match(r'^\d', line) and 'datum' not in line_lower:
-                # This might be location, but keep looking for company name first
-                pass
-
-        # Date
-        if 'datum' in line_lower or re.match(r'^\d{4}-\d{2}-\d{2}$', line):
-            date_match = re.search(r'(\d{4}-\d{2}-\d{2})', line)
-            if date_match:
-                date = parse_swedish_date(date_match.group(1))
-            continue
-
-        # Business type - look for SNI code + description
-        if 'verksamhet' in line_lower or 'sni' in line_lower:
-            # Pattern: "Verksamhet (SNI) 46320 Partihandel med livsmedel"
-            sni_match = re.search(r'(?:verksamhet|sni)[^\d]*(\d{5})\s+(.+)', line, re.IGNORECASE)
-            if sni_match:
-                business_type = sni_match.group(2).strip()
-            else:
-                # Sometimes it's just the description without code
-                desc_match = re.search(r'(?:verksamhet|sni)[:\s]+([^\d][^\n]+)', line, re.IGNORECASE)
-                if desc_match:
-                    business_type = desc_match.group(1).strip()
-            continue
-
-        # Employees
-        if 'anställda' in line_lower:
-            emp_match = re.search(r'(\d+)', line)
-            if emp_match:
-                employees = int(emp_match.group(1))
-            continue
-
-        # Revenue
-        if 'omsättning' in line_lower:
-            rev_match = re.search(r'(\d[\d\s]*)', line)
-            if rev_match:
-                revenue = float(rev_match.group(1).replace(' ', ''))
-            continue
-
-    # If no company name, try to find it in first few lines
-    if not company_name:
-        for line in lines[1:5]:
-            if len(line) > 5 and not re.match(r'^[\d\s,-]+$', line):
-                if 'datum' not in line.lower() and 'status' not in line.lower():
-                    company_name = line.strip()
-                    break
-
-    if not company_name:
-        return None
-
-    if not org_number:
-        org_number = "000000-0000"
-
-    return BankruptcyRecord(
-        company_name=company_name,
-        org_number=org_number,
-        date=date,
-        location=location,
-        region=region,
-        business_type=business_type,
-        employees=employees,
-        revenue=revenue,
-    )
-
-
-async def enrich_from_detail_page(page: Page, record: BankruptcyRecord, detail_url: str):
-    """Enrich record with administrator and court from detail page."""
-    try:
-        await page.goto(detail_url, timeout=15000, wait_until='domcontentloaded')
-        await asyncio.sleep(1)
-
-        text_content = await page.inner_text('body')
-
-        # Extract administrator
-        admin_patterns = [
-            r'(?:Konkurs)?[Ff]örvaltare[:\s]+([^\n]+)',
-            r'Administrator[:\s]+([^\n]+)',
-        ]
-
-        for pattern in admin_patterns:
-            match = re.search(pattern, text_content)
-            if match:
-                record.administrator = match.group(1).strip()
-                break
-
-        # Extract court - be specific to avoid matching company names
-        court_patterns = [
-            r'Tingsrätt[:\s]+([^\n]+)',  # Try labeled field first
-            r'\b(Stockholms tingsrätt)\b',
-            r'\b(Göteborgs tingsrätt)\b',
-            r'\b(Malmö tingsrätt)\b',
-            r'\b(Uppsala tingsrätt)\b',
-            r'\b(Linköpings tingsrätt)\b',
-            r'\b(Västerås tingsrätt)\b',
-            r'\b(Örebro tingsrätt)\b',
-            r'\b(Norrköpings tingsrätt)\b',
-            r'\b(Helsingborgs tingsrätt)\b',
-            r'\b(Jönköpings tingsrätt)\b',
-            r'\b(Umeå tingsrätt)\b',
-            r'\b(Lunds tingsrätt)\b',
-            r'\b(Borås tingsrätt)\b',
-            r'\b(Sundsvalls tingsrätt)\b',
-            r'\b(Gävle tingsrätt)\b',
-            r'\b(Eskilstuna tingsrätt)\b',
-            r'\b(Karlstads tingsrätt)\b',
-            r'\b(Växjö tingsrätt)\b',
-            r'\b(Halmstads tingsrätt)\b',
-            r'\b(Södertörns tingsrätt)\b',
-            r'\b(Attunda tingsrätt)\b',
-            # Generic pattern as last resort - must start with capital and end with tingsrätt
-            r'(?:Domstol|Tingsrätt)[:\s]*([A-ZÅÄÖ][a-zåäöA-ZÅÄÖ\s]+tingsrätt)',
-        ]
-
-        for pattern in court_patterns:
-            match = re.search(pattern, text_content, re.IGNORECASE)
-            if match:
-                court_name = match.group(1).strip() if match.lastindex else match.group(0).strip()
-                # Validate it looks like a court name (not a company)
-                if 'tingsrätt' in court_name.lower() and not any(suffix in court_name for suffix in ['AB', 'HB', 'KB']):
-                    record.court = court_name
-                    break
-
-    except Exception as e:
-        logger.debug(f"Could not enrich from detail page: {e}")
+    return results
 
 
 # ============================================================================
@@ -394,7 +211,6 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
     filter_regions = [r.strip() for r in os.getenv("FILTER_REGIONS", "").split(",") if r.strip()]
     filter_keywords = [k.strip().lower() for k in os.getenv("FILTER_INCLUDE_KEYWORDS", "").split(",") if k.strip()]
     min_employees = int(os.getenv("FILTER_MIN_EMPLOYEES", "0") or "0")
-    min_revenue = float(os.getenv("FILTER_MIN_REVENUE", "0") or "0")
 
     filtered = []
 
@@ -404,21 +220,20 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
             if not any(region.lower() in record.region.lower() for region in filter_regions):
                 continue
 
-        # Keyword filter (match in company name or business type)
+        # Keyword filter
         if filter_keywords:
-            searchable = f"{record.company_name} {record.business_type}".lower()
+            searchable = f"{record.company_name} {record.industry_name}".lower()
             if not any(kw in searchable for kw in filter_keywords):
                 continue
 
         # Employee filter
-        if min_employees > 0 and record.employees is not None:
-            if record.employees < min_employees:
-                continue
-
-        # Revenue filter
-        if min_revenue > 0 and record.revenue is not None:
-            if record.revenue < min_revenue:
-                continue
+        if min_employees > 0 and record.employees != 'N/A':
+            try:
+                emp_count = int(record.employees.replace(',', ''))
+                if emp_count < min_employees:
+                    continue
+            except:
+                pass
 
         filtered.append(record)
 
@@ -430,42 +245,42 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
 # ============================================================================
 
 def format_email_html(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate beautiful HTML email report with table."""
+    """Generate HTML email report."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
-    # Generate table rows
     table_rows = ""
     for i, r in enumerate(records, 1):
-        date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
         row_class = "even" if i % 2 == 0 else "odd"
 
-        # Details for expandable section (secondary info only)
+        # Details section
         details = []
-        if r.administrator:
-            details.append(f"<strong>Administrator:</strong> {r.administrator}")
-        if r.employees is not None:
+        if r.trustee != 'N/A':
+            details.append(f"<strong>Trustee:</strong> {r.trustee}")
+        if r.trustee_firm != 'N/A':
+            details.append(f"<strong>Firm:</strong> {r.trustee_firm}")
+        if r.trustee_address != 'N/A':
+            details.append(f"<strong>Address:</strong> {r.trustee_address}")
+        if r.employees != 'N/A':
             details.append(f"<strong>Employees:</strong> {r.employees}")
-        if r.revenue is not None:
-            details.append(f"<strong>Revenue:</strong> {r.revenue:,.0f} SEK")
+        if r.net_sales != 'N/A':
+            details.append(f"<strong>Net Sales:</strong> {r.net_sales}")
+        if r.total_assets != 'N/A':
+            details.append(f"<strong>Total Assets:</strong> {r.total_assets}")
 
-        details_html = " &nbsp;|&nbsp; ".join(details) if details else "No additional details"
+        details_html = " &nbsp;|&nbsp; ".join(details) if details else "No details"
 
         org_clean = r.org_number.replace('-', '')
         poit_link = f"https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}"
-
-        location_display = r.location or "Unknown"
-        if r.region and r.region != location_display:
-            location_display += f", {r.region}"
 
         table_rows += f"""
         <tr class="{row_class}">
             <td style="text-align: center;">{i}</td>
             <td><strong>{r.company_name}</strong></td>
             <td style="text-align: center;"><code>{r.org_number}</code></td>
-            <td style="text-align: center;">{date_str}</td>
-            <td>{location_display}</td>
-            <td>{r.court or 'Unknown'}</td>
-            <td>{r.business_type or 'Not specified'}</td>
+            <td style="text-align: center;">{r.initiated_date}</td>
+            <td>{r.region}</td>
+            <td>{r.court}</td>
+            <td><code>{r.sni_code}</code> {r.industry_name}</td>
             <td style="text-align: center;">
                 <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
             </td>
@@ -487,7 +302,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
             background: #f5f5f5;
@@ -544,9 +359,6 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }}
-        th:first-child {{
-            text-align: center;
-        }}
         td {{
             padding: 12px 10px;
             border-bottom: 1px solid #e5e7eb;
@@ -586,9 +398,6 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             color: #64748b;
             border-top: 2px solid #e5e7eb;
         }}
-        .footer a {{
-            color: #3b82f6;
-        }}
     </style>
 </head>
 <body>
@@ -609,12 +418,12 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             <thead>
                 <tr>
                     <th style="width: 40px;">#</th>
-                    <th style="width: 20%;">Company</th>
+                    <th style="width: 18%;">Company</th>
                     <th style="width: 120px;">Org Number</th>
                     <th style="width: 100px;">Date</th>
-                    <th style="width: 15%;">Location</th>
+                    <th style="width: 12%;">Region</th>
                     <th style="width: 15%;">Court</th>
-                    <th style="width: 20%;">Business Type</th>
+                    <th style="width: 25%;">Industry</th>
                     <th style="width: 70px;">Link</th>
                 </tr>
             </thead>
@@ -625,11 +434,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
 
         <div class="footer">
             <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} UTC</p>
-            <p>Data source: <a href="https://www.konkurslistan.se">Konkurslistan.se</a></p>
-            <p style="margin-top: 10px; font-size: 11px;">
-                Automated bankruptcy monitoring •
-                <a href="https://poit.bolagsverket.se">POIT Official Gazette</a>
-            </p>
+            <p>Data source: <a href="https://tic.io/en/oppna-data/konkurser">TIC.io Open Data</a></p>
         </div>
     </div>
 </body>
@@ -640,7 +445,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
 
 
 def format_email_plain(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate plain text email report as fallback."""
+    """Generate plain text email report."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
     text = f"""
@@ -652,29 +457,32 @@ Total bankruptcies: {len(records)}
 """
 
     for i, r in enumerate(records, 1):
-        date_str = r.date.strftime("%Y-%m-%d") if r.date else "Unknown"
         org_clean = r.org_number.replace('-', '')
 
         text += f"""
 {i}. {r.company_name} ({r.org_number})
-   Date: {date_str}
-   Location: {r.location or 'Unknown'}{', ' + r.region if r.region else ''}
-   Court: {r.court or 'Unknown'}
-   Administrator: {r.administrator or 'Unknown'}
-   Business Type: {r.business_type or 'Not specified'}
+   Date: {r.initiated_date}
+   Region: {r.region}
+   Court: {r.court}
+   Industry: [{r.sni_code}] {r.industry_name}
+   Trustee: {r.trustee}
+   Firm: {r.trustee_firm}
+   Address: {r.trustee_address}
 """
 
-        if r.employees is not None:
+        if r.employees != 'N/A':
             text += f"   Employees: {r.employees}\n"
-        if r.revenue is not None:
-            text += f"   Revenue: {r.revenue:,.0f} SEK\n"
+        if r.net_sales != 'N/A':
+            text += f"   Net Sales: {r.net_sales}\n"
+        if r.total_assets != 'N/A':
+            text += f"   Total Assets: {r.total_assets}\n"
 
         text += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
 
     text += f"""
 {'=' * 80}
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-Source: Konkurslistan.se
+Source: TIC.io Open Data (https://tic.io/en/oppna-data/konkurser)
 """
 
     return text
@@ -691,29 +499,27 @@ def send_email(subject: str, html_body: str, plain_body: str):
         return
 
     if not recipient_emails:
-        logger.error("No recipients configured (RECIPIENT_EMAILS)")
+        logger.error("No recipient emails configured (RECIPIENT_EMAILS)")
         return
 
-    # Create multipart message with HTML and plain text
+    recipients = [email.strip() for email in recipient_emails.split(',')]
+
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = sender_email
-    msg['To'] = recipient_emails
+    msg['To'] = ', '.join(recipients)
 
-    # Attach plain text and HTML versions
-    part1 = MIMEText(plain_body, 'plain', 'utf-8')
-    part2 = MIMEText(html_body, 'html', 'utf-8')
+    part1 = MIMEText(plain_body, 'plain')
+    part2 = MIMEText(html_body, 'html')
 
     msg.attach(part1)
     msg.attach(part2)
 
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=30)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"Email sent to {recipient_emails}")
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipients, msg.as_string())
+            logger.info(f"Email sent successfully to {len(recipients)} recipients")
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
 
@@ -722,53 +528,42 @@ def send_email(subject: str, html_body: str, plain_body: str):
 # MAIN
 # ============================================================================
 
-async def main():
+def main():
     """Main entry point."""
-    # Get year/month from environment or use previous month
-    now = datetime.now()
-    year = int(os.getenv('YEAR', str(now.year)))
-    month = int(os.getenv('MONTH', str(now.month)))
+    logger.info("=== Swedish Bankruptcy Monitor (TIC.io) ===")
 
-    # If running on 1st-3rd of month, default to previous month
-    if os.getenv('MONTH') is None and now.day <= 3:
+    # Determine target month
+    year = int(os.getenv('YEAR', datetime.now().year))
+    month = int(os.getenv('MONTH', datetime.now().month))
+
+    # Auto-select previous month if in first 3 days
+    if month == datetime.now().month and datetime.now().day <= 3:
         month = month - 1 if month > 1 else 12
-        if month == 12:
-            year -= 1
+        year = year if month != 12 else year - 1
 
-    logger.info(f"=== Swedish Bankruptcy Monitor ===")
     logger.info(f"Processing: {year}-{month:02d}")
 
-    month_name = datetime(year, month, 1).strftime("%B %Y")
+    # Scrape bankruptcies
+    records = scrape_tic_bankruptcies(year, month)
+    logger.info(f"Scraped {len(records)} bankruptcies for {year}-{month:02d}")
 
-    # Step 1: Scrape
-    records = await scrape_konkurslistan(year, month)
-
-    if not records:
-        logger.warning("No bankruptcies found!")
-        return
-
-    # Step 2: Filter
+    # Filter
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
 
-    if not filtered:
-        logger.info("No bankruptcies match your filter criteria")
-        return
-
-    # Step 3: Email
-    subject = f"🇸🇪 Swedish Bankruptcies - {month_name}"
+    # Generate email
+    month_name = datetime(year, month, 1).strftime("%B %Y")
+    subject = f"Swedish Bankruptcy Report - {month_name} ({len(filtered)} bankruptcies)"
     html_body = format_email_html(filtered, year, month)
     plain_body = format_email_plain(filtered, year, month)
 
-    # Print plain text to console
-    print("\n" + plain_body)
-
-    # Send email
-    if os.getenv('NO_EMAIL') != 'true':
-        send_email(subject, html_body, plain_body)
-    else:
+    # Send or print
+    if os.getenv('NO_EMAIL', '').lower() == 'true':
         logger.info("Email sending skipped (NO_EMAIL=true)")
+        print(plain_body)
+    else:
+        send_email(subject, html_body, plain_body)
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+if __name__ == '__main__':
+    main()
