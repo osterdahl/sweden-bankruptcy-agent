@@ -17,6 +17,11 @@ on:
         description: 'Month to process 1-12 (leave blank for auto)'
         required: false
         default: ''
+      enable_ai_scoring:
+        description: 'Enable AI scoring (overrides secret setting)'
+        required: false
+        type: boolean
+        default: false
       skip_email:
         description: 'Skip sending email report'
         required: false
@@ -93,6 +98,10 @@ jobs:
           FILTER_INCLUDE_KEYWORDS: ${{ secrets.FILTER_INCLUDE_KEYWORDS }}
           FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES }}
           FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE }}
+
+          # Optional AI scoring (manual override or secret)
+          AI_SCORING_ENABLED: ${{ github.event.inputs.enable_ai_scoring == 'true' && 'true' || secrets.AI_SCORING_ENABLED }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
           # Skip email if requested
           NO_EMAIL: ${{ github.event.inputs.skip_email }}

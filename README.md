@@ -194,8 +194,35 @@ FILTER_MIN_EMPLOYEES=10
 Automated monthly reports:
 
 - Runs 1st of each month at 6 AM UTC
-- Can be triggered manually
-- Uses repository secrets for email credentials
+- Can be triggered manually with optional AI scoring toggle
+- Uses repository secrets for email credentials and API keys
+
+### Required Secrets
+
+Set these in GitHub repository settings → Secrets and variables → Actions:
+
+```
+SENDER_EMAIL           # Gmail address
+SENDER_PASSWORD        # Gmail app password
+RECIPIENT_EMAILS       # Comma-separated emails
+```
+
+### Optional Secrets
+
+```
+AI_SCORING_ENABLED     # Set to 'true' to enable AI scoring
+ANTHROPIC_API_KEY      # Claude API key (only needed if AI scoring enabled)
+FILTER_REGIONS         # Comma-separated regions
+FILTER_INCLUDE_KEYWORDS # Comma-separated keywords
+FILTER_MIN_EMPLOYEES   # Minimum employee count
+```
+
+### Manual Trigger
+
+Go to Actions → Monthly Bankruptcy Report → Run workflow:
+- **Enable AI scoring**: Override secret setting for this run
+- **Year/Month**: Process specific period
+- **Skip email**: Dry run mode
 
 ## Configuration
 
