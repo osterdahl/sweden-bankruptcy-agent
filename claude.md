@@ -24,11 +24,13 @@
 
 ```
 Lines 1-30:    Imports and logging setup
-Lines 31-43:   Data model (@dataclass BankruptcyRecord)
-Lines 45-200:  Scraper (TIC.io page scraping, data extraction)
+Lines 31-54:   Data model (@dataclass BankruptcyRecord with AI fields)
+Lines 56-200:  Scraper (TIC.io page scraping, data extraction)
 Lines 202-235: Filtering (region, keywords, employee count)
-Lines 237-455: Email (HTML + plain text generation, SMTP)
-Lines 457-end: Main (orchestration, date logic)
+Lines 237-413: AI Scoring (rule-based + Claude API hybrid)
+Lines 415-765: Email (HTML + plain text, priority sections)
+Lines 767-810: SMTP email sending
+Lines 812-end: Main (orchestration, date logic, AI scoring integration)
 ```
 
 ## Key Patterns
@@ -55,17 +57,40 @@ If TIC.io changes their HTML structure, update CSS selectors
 **Add filtering logic** (lines 202-235):
 Simple environment variable-based filters
 
+## AI Scoring System
+
+### High-Value SNI Codes (lines 260-272)
+SNI codes that score 8-10 (HIGH priority):
+- 26: Computer/electronic manufacturing
+- 62: Computer programming/consultancy
+- 72: Scientific R&D
+- 71: Architectural/engineering
+- 749: Professional/scientific/technical
+
+### Scoring Flow
+1. **Rule-based** (all records): SNI code → company size → keywords → score 1-10
+2. **AI validation** (HIGH only): Claude API validates + adjusts score
+3. **Priority assignment**: HIGH (≥8), MEDIUM (5-7), LOW (1-4)
+
+### Email Sections
+- HTML: 3 color-coded sections with priority badges
+- Plain text: Separate HIGH/MEDIUM/LOW sections with AI reasoning
+
 ## Configuration
 
 ### Required
 - `SENDER_EMAIL`, `SENDER_PASSWORD`, `RECIPIENT_EMAILS`
 
-### Optional
+### Optional - Filtering
 - `FILTER_REGIONS` - Comma-separated (e.g., "Stockholm,Göteborg")
 - `FILTER_INCLUDE_KEYWORDS` - Match company name or business type
 - `FILTER_MIN_EMPLOYEES`, `FILTER_MIN_REVENUE`
 - `YEAR`, `MONTH` - Override auto-detection
 - `NO_EMAIL=true` - Dry run
+
+### Optional - AI Scoring
+- `AI_SCORING_ENABLED=true` - Enable hybrid scoring (default: false)
+- `ANTHROPIC_API_KEY` - Claude API key for HIGH validation
 
 ## Known Limitations
 1. Stateless - doesn't track previously sent bankruptcies

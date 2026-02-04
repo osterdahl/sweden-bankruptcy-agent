@@ -13,8 +13,55 @@
 - 🚫 **No CAPTCHA**: No bot detection, no API limits
 - 📧 **Beautiful emails**: HTML reports with alternating row colors
 - 🎯 **Smart filtering**: By region, keywords, employee count
+- 🤖 **AI scoring** (optional): Hybrid prioritization with HIGH/MEDIUM/LOW sections
 - ⚡ **Fast & reliable**: Single source, no enrichment delays
 - 🤖 **GitHub Actions**: Automated monthly runs
+
+## AI Scoring (Optional)
+
+**Intelligent bankruptcy prioritization for data acquisition.**
+
+### How It Works
+
+1. **Rule-Based Scoring** (FREE, fast)
+   - SNI code analysis (tech/consulting/R&D = HIGH value)
+   - Company size metrics (employees, revenue, assets)
+   - Keyword detection in company name
+
+2. **AI Validation** (Optional, only for HIGH candidates)
+   - Claude API analyzes top ~10-15% of bankruptcies
+   - Validates industry fit + data infrastructure likelihood
+   - Provides reasoning for each HIGH-priority case
+   - Cost: ~$0.60-0.90/month for typical usage
+
+### Email Format
+
+When enabled, emails split into 3 sections:
+- ⭐ **HIGH PRIORITY** - Data-rich companies (tech, SaaS, consulting)
+- ⚠️ **MEDIUM PRIORITY** - Moderate acquisition potential
+- ℹ️ **LOW PRIORITY** - Limited data assets expected
+
+### Configuration
+
+```bash
+# Enable AI scoring (default: disabled)
+AI_SCORING_ENABLED=true
+
+# Optional: Claude API for HIGH candidate validation
+ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+```
+
+**Without API key**: Rule-based scoring only (still very effective!)
+**With API key**: Hybrid scoring with AI reasoning for top candidates
+
+### Example Output
+
+January 2026: 837 bankruptcies → 74 HIGH | 623 MEDIUM | 140 LOW
+
+HIGH examples:
+- Computer programming/consultancy (SNI 62)
+- Scientific R&D (SNI 72)
+- Professional/technical services (SNI 749)
 
 ## Data Coverage
 

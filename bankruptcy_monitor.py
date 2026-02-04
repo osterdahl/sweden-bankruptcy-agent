@@ -15,7 +15,7 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
 
 from playwright.sync_api import sync_playwright
@@ -48,6 +48,9 @@ class BankruptcyRecord:
     net_sales: str
     total_assets: str
     region: str = ""
+    ai_score: Optional[int] = None      # 1-10 priority score
+    ai_reason: Optional[str] = None     # Brief explanation
+    priority: Optional[str] = None      # "HIGH", "MEDIUM", "LOW"
 
 
 # ============================================================================
@@ -247,56 +250,296 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
 
 
 # ============================================================================
+# AI SCORING (HYBRID)
+# ============================================================================
+
+# SNI code scoring table - High-value industries for data acquisition
+HIGH_VALUE_SNI_CODES = {
+    '26': 10,  # Computer/electronic/optical manufacturing
+    '28': 9,   # Machinery and equipment
+    '33': 8,   # Repair/installation of machinery
+    '465': 9,  # ICT equipment wholesale
+    '58': 8,   # Publishing
+    '62': 10,  # Computer programming/consultancy
+    '63': 9,   # Information services
+    '69': 7,   # Legal/accounting
+    '71': 8,   # Architectural/engineering
+    '72': 10,  # Scientific R&D
+    '749': 8,  # Other professional/scientific/technical
+}
+
+LOW_VALUE_SNI_CODES = {
+    '56': 2,   # Food/beverage service
+    '68': 3,   # Real estate
+    '64': 2,   # Financial services (holding companies)
+    '96': 2,   # Personal services
+}
+
+def calculate_base_score(record: BankruptcyRecord) -> int:
+    """Rule-based scoring: SNI code + company size."""
+    score = 5  # Neutral baseline
+
+    # SNI code scoring (primary signal)
+    sni = record.sni_code
+    if sni and sni != 'N/A' and len(sni) >= 2:
+        # Check 2-digit match
+        sni_prefix = sni[:2]
+        if sni_prefix in HIGH_VALUE_SNI_CODES:
+            score = HIGH_VALUE_SNI_CODES[sni_prefix]
+        elif sni_prefix in LOW_VALUE_SNI_CODES:
+            score = LOW_VALUE_SNI_CODES[sni_prefix]
+        # Check 3-digit match (more specific)
+        if len(sni) >= 3:
+            sni_3 = sni[:3]
+            if sni_3 in HIGH_VALUE_SNI_CODES:
+                score = HIGH_VALUE_SNI_CODES[sni_3]
+
+    # Company size boost (larger = more data infrastructure)
+    try:
+        if record.employees and record.employees != 'N/A':
+            emp_count = int(record.employees.replace(',', ''))
+            if emp_count >= 50:
+                score = min(score + 2, 10)
+            elif emp_count >= 20:
+                score = min(score + 1, 10)
+    except:
+        pass
+
+    # Keyword analysis in company name
+    data_keywords = ['data', 'tech', 'software', 'analytics', 'ai', 'cloud', 'digital']
+    name_lower = record.company_name.lower()
+    if any(kw in name_lower for kw in data_keywords):
+        score = min(score + 1, 10)
+
+    return score
+
+
+def validate_with_ai(record: BankruptcyRecord) -> Tuple[int, str]:
+    """Use Claude API to validate/refine high-priority scores."""
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    if not api_key:
+        return (record.ai_score, "Rule-based only (no API key)")
+
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=api_key)
+
+        prompt = f"""Analyze this Swedish bankruptcy for data acquisition value (1-10 scale):
+
+Company: {record.company_name}
+Industry: [{record.sni_code}] {record.industry_name}
+Employees: {record.employees}
+Revenue: {record.net_sales}
+Assets: {record.total_assets}
+Region: {record.region}
+
+Focus on: likely data infrastructure, customer databases, valuable IP.
+Respond with ONLY: SCORE:X REASON:brief_explanation"""
+
+        message = client.messages.create(
+            model="claude-3-haiku-20240307",  # Cheaper model for validation
+            max_tokens=150,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response = message.content[0].text.strip()
+
+        # Parse "SCORE:8 REASON:Tech company with large customer database"
+        score_match = re.search(r'SCORE:(\d+)', response)
+        reason_match = re.search(r'REASON:(.+)', response)
+
+        if score_match:
+            ai_score = int(score_match.group(1))
+            ai_reason = reason_match.group(1) if reason_match else response
+            return (ai_score, ai_reason)
+        else:
+            return (record.ai_score, f"AI validation: {response}")
+
+    except Exception as e:
+        logger.debug(f"AI validation failed for {record.company_name}: {e}")
+        return (record.ai_score, "Rule-based score (AI unavailable)")
+
+
+def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
+    """Hybrid scoring: rule-based filter + AI validation for high candidates."""
+    ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
+
+    if not ai_enabled:
+        # Feature disabled: add null scores, maintain current behavior
+        for r in records:
+            r.ai_score = None
+            r.ai_reason = None
+            r.priority = None
+        return records
+
+    logger.info("AI scoring enabled - analyzing bankruptcies...")
+
+    # Phase 1: Rule-based scoring for ALL records
+    for record in records:
+        base_score = calculate_base_score(record)
+        record.ai_score = base_score
+
+        # Assign priority tier
+        if base_score >= 8:
+            record.priority = "HIGH"
+            record.ai_reason = "High-value industry + data-rich profile"
+        elif base_score >= 5:
+            record.priority = "MEDIUM"
+            record.ai_reason = "Moderate data acquisition potential"
+        else:
+            record.priority = "LOW"
+            record.ai_reason = "Limited data assets expected"
+
+    # Phase 2: AI validation for HIGH priority only (cost control)
+    high_priority = [r for r in records if r.priority == "HIGH"]
+
+    if high_priority and os.getenv('ANTHROPIC_API_KEY'):
+        logger.info(f"Validating {len(high_priority)} HIGH priority candidates with Claude API...")
+
+        for record in high_priority:
+            ai_score, ai_reason = validate_with_ai(record)
+            record.ai_score = ai_score
+            record.ai_reason = ai_reason
+
+            # Re-classify if AI disagrees
+            if ai_score < 8:
+                record.priority = "MEDIUM" if ai_score >= 5 else "LOW"
+
+    return records
+
+
+# ============================================================================
 # EMAIL
 # ============================================================================
 
 def format_email_html(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate HTML email report."""
+    """Generate HTML email report with priority sections."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
-    table_rows = ""
-    for i, r in enumerate(records, 1):
-        row_class = "even" if i % 2 == 0 else "odd"
+    # Split by priority
+    high_risk = [r for r in records if r.priority == "HIGH"]
+    med_risk = [r for r in records if r.priority == "MEDIUM"]
+    low_risk = [r for r in records if r.priority == "LOW"]
+    no_score = [r for r in records if not r.priority]
 
-        # Details section
-        details = []
-        if r.trustee != 'N/A':
-            details.append(f"<strong>Trustee:</strong> {r.trustee}")
-        if r.trustee_firm != 'N/A':
-            details.append(f"<strong>Firm:</strong> {r.trustee_firm}")
-        if r.trustee_address != 'N/A':
-            details.append(f"<strong>Address:</strong> {r.trustee_address}")
-        if r.employees != 'N/A':
-            details.append(f"<strong>Employees:</strong> {r.employees}")
-        if r.net_sales != 'N/A':
-            details.append(f"<strong>Net Sales:</strong> {r.net_sales}")
-        if r.total_assets != 'N/A':
-            details.append(f"<strong>Total Assets:</strong> {r.total_assets}")
+    # Helper function to render a table section
+    def render_section(section_records, title, badge_color, global_start_index):
+        if not section_records:
+            return ""
 
-        details_html = " &nbsp;|&nbsp; ".join(details) if details else "No details"
+        rows = ""
+        for i, r in enumerate(section_records, global_start_index):
+            row_class = "even" if i % 2 == 0 else "odd"
 
-        org_clean = r.org_number.replace('-', '')
-        poit_link = f"https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}"
+            # Details section
+            details = []
+            if r.priority and r.ai_reason:
+                details.append(f"<strong>AI Reasoning:</strong> {r.ai_reason} (Score: {r.ai_score}/10)")
+            if r.trustee != 'N/A':
+                details.append(f"<strong>Trustee:</strong> {r.trustee}")
+            if r.trustee_firm != 'N/A':
+                details.append(f"<strong>Firm:</strong> {r.trustee_firm}")
+            if r.trustee_address != 'N/A':
+                details.append(f"<strong>Address:</strong> {r.trustee_address}")
+            if r.employees != 'N/A':
+                details.append(f"<strong>Employees:</strong> {r.employees}")
+            if r.net_sales != 'N/A':
+                details.append(f"<strong>Net Sales:</strong> {r.net_sales}")
+            if r.total_assets != 'N/A':
+                details.append(f"<strong>Total Assets:</strong> {r.total_assets}")
 
-        table_rows += f"""
-        <tr class="{row_class}">
-            <td style="text-align: center;">{i}</td>
-            <td><strong>{r.company_name}</strong></td>
-            <td style="text-align: center;"><code>{r.org_number}</code></td>
-            <td style="text-align: center;">{r.initiated_date}</td>
-            <td>{r.region}</td>
-            <td>{r.court}</td>
-            <td><code>{r.sni_code}</code> {r.industry_name}</td>
-            <td style="text-align: center;">
-                <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
-            </td>
-        </tr>
-        <tr class="{row_class}-detail">
-            <td colspan="8" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
-                {details_html}
-            </td>
-        </tr>
+            details_html = " &nbsp;|&nbsp; ".join(details) if details else "No details"
+
+            org_clean = r.org_number.replace('-', '')
+            poit_link = f"https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}"
+
+            # Priority badge
+            priority_badge = f'<span class="priority-badge {badge_color}">{r.priority}</span>' if r.priority else ''
+
+            rows += f"""
+            <tr class="{row_class}">
+                <td style="text-align: center;">{i}</td>
+                <td>{priority_badge}<strong>{r.company_name}</strong></td>
+                <td style="text-align: center;"><code>{r.org_number}</code></td>
+                <td style="text-align: center;">{r.initiated_date}</td>
+                <td>{r.region}</td>
+                <td>{r.court}</td>
+                <td><code>{r.sni_code}</code> {r.industry_name}</td>
+                <td style="text-align: center;">
+                    <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
+                </td>
+            </tr>
+            <tr class="{row_class}-detail">
+                <td colspan="8" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
+                    {details_html}
+                </td>
+            </tr>
+            """
+
+        section_html = f"""
+        <div class="section-header {badge_color}">
+            <h2>{title} ({len(section_records)})</h2>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th style="width: 18%;">Company</th>
+                    <th style="width: 120px;">Org Number</th>
+                    <th style="width: 100px;">Date</th>
+                    <th style="width: 12%;">Region</th>
+                    <th style="width: 15%;">Court</th>
+                    <th style="width: 25%;">Industry</th>
+                    <th style="width: 70px;">Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows}
+            </tbody>
+        </table>
         """
+
+        return section_html
+
+    # Priority summary (if AI scoring enabled)
+    priority_summary = ""
+    if high_risk or med_risk or low_risk:
+        priority_summary = f"""
+        <div class="priority-summary">
+            <div class="priority-stat high">
+                <strong>{len(high_risk)}</strong>
+                <span>HIGH Priority</span>
+            </div>
+            <div class="priority-stat medium">
+                <strong>{len(med_risk)}</strong>
+                <span>MEDIUM Priority</span>
+            </div>
+            <div class="priority-stat low">
+                <strong>{len(low_risk)}</strong>
+                <span>LOW Priority</span>
+            </div>
+        </div>
+        """
+
+    # Render sections in priority order
+    sections_html = ""
+    current_index = 1
+
+    if high_risk:
+        sections_html += render_section(high_risk, "⭐ HIGH PRIORITY", "high", current_index)
+        current_index += len(high_risk)
+
+    if med_risk:
+        sections_html += render_section(med_risk, "⚠️ MEDIUM PRIORITY", "medium", current_index)
+        current_index += len(med_risk)
+
+    if low_risk:
+        sections_html += render_section(low_risk, "ℹ️ LOW PRIORITY", "low", current_index)
+        current_index += len(low_risk)
+
+    # Fallback for no scoring
+    if no_score:
+        sections_html += render_section(no_score, "Bankruptcies", "default", current_index)
 
     html = f"""
 <!DOCTYPE html>
@@ -349,6 +592,91 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             color: #1e3a8a;
             font-size: 24px;
             display: block;
+        }}
+        .priority-summary {{
+            display: flex;
+            gap: 20px;
+            padding: 20px 30px;
+            background: #f8fafc;
+            border-bottom: 2px solid #e5e7eb;
+        }}
+        .priority-stat {{
+            text-align: center;
+            flex: 1;
+        }}
+        .priority-stat.high strong {{
+            color: #dc2626;
+            font-size: 32px;
+            display: block;
+        }}
+        .priority-stat.medium strong {{
+            color: #ea580c;
+            font-size: 32px;
+            display: block;
+        }}
+        .priority-stat.low strong {{
+            color: #64748b;
+            font-size: 32px;
+            display: block;
+        }}
+        .priority-stat span {{
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }}
+        .section-header {{
+            padding: 15px 30px;
+            margin-top: 20px;
+            border-left: 4px solid;
+        }}
+        .section-header.high {{
+            background: #fef2f2;
+            border-left-color: #dc2626;
+        }}
+        .section-header.medium {{
+            background: #fff7ed;
+            border-left-color: #ea580c;
+        }}
+        .section-header.low {{
+            background: #f8fafc;
+            border-left-color: #94a3b8;
+        }}
+        .section-header h2 {{
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }}
+        .section-header.high h2 {{
+            color: #dc2626;
+        }}
+        .section-header.medium h2 {{
+            color: #ea580c;
+        }}
+        .section-header.low h2 {{
+            color: #64748b;
+        }}
+        .priority-badge {{
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-right: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+        .priority-badge.high {{
+            background: #fee2e2;
+            color: #dc2626;
+        }}
+        .priority-badge.medium {{
+            background: #ffedd5;
+            color: #ea580c;
+        }}
+        .priority-badge.low {{
+            background: #f1f5f9;
+            color: #64748b;
         }}
         table {{
             width: 100%;
@@ -420,23 +748,9 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 40px;">#</th>
-                    <th style="width: 18%;">Company</th>
-                    <th style="width: 120px;">Org Number</th>
-                    <th style="width: 100px;">Date</th>
-                    <th style="width: 12%;">Region</th>
-                    <th style="width: 15%;">Court</th>
-                    <th style="width: 25%;">Industry</th>
-                    <th style="width: 70px;">Link</th>
-                </tr>
-            </thead>
-            <tbody>
-                {table_rows}
-            </tbody>
-        </table>
+        {priority_summary}
+
+        {sections_html}
 
         <div class="footer">
             <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} UTC</p>
@@ -451,22 +765,50 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
 
 
 def format_email_plain(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate plain text email report."""
+    """Generate plain text email report with priority sections."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
+    # Split by priority
+    high_risk = [r for r in records if r.priority == "HIGH"]
+    med_risk = [r for r in records if r.priority == "MEDIUM"]
+    low_risk = [r for r in records if r.priority == "LOW"]
+    no_score = [r for r in records if not r.priority]
+
+    # Header
     text = f"""
 SWEDISH BANKRUPTCY REPORT - {month_name}
 {'=' * 80}
 
-Total bankruptcies: {len(records)}
+SUMMARY
+Total: {len(records)}"""
+
+    if high_risk or med_risk or low_risk:
+        text += f" | HIGH: {len(high_risk)} | MEDIUM: {len(med_risk)} | LOW: {len(low_risk)}"
+
+    text += "\n\n"
+
+    # Helper function to format a section
+    def format_section(section_records, title, global_start_index):
+        if not section_records:
+            return ""
+
+        section_text = f"""
+{'=' * 80}
+{title} ({len(section_records)})
+{'=' * 80}
 
 """
+        for i, r in enumerate(section_records, global_start_index):
+            org_clean = r.org_number.replace('-', '')
 
-    for i, r in enumerate(records, 1):
-        org_clean = r.org_number.replace('-', '')
+            section_text += f"""
+{i}. {r.company_name} ({r.org_number})"""
 
-        text += f"""
-{i}. {r.company_name} ({r.org_number})
+            if r.priority and r.ai_reason:
+                section_text += f"""
+   AI Score: {r.ai_score}/10 | {r.ai_reason}"""
+
+            section_text += f"""
    Date: {r.initiated_date}
    Region: {r.region}
    Court: {r.court}
@@ -476,15 +818,37 @@ Total bankruptcies: {len(records)}
    Address: {r.trustee_address}
 """
 
-        if r.employees != 'N/A':
-            text += f"   Employees: {r.employees}\n"
-        if r.net_sales != 'N/A':
-            text += f"   Net Sales: {r.net_sales}\n"
-        if r.total_assets != 'N/A':
-            text += f"   Total Assets: {r.total_assets}\n"
+            if r.employees != 'N/A':
+                section_text += f"   Employees: {r.employees}\n"
+            if r.net_sales != 'N/A':
+                section_text += f"   Net Sales: {r.net_sales}\n"
+            if r.total_assets != 'N/A':
+                section_text += f"   Total Assets: {r.total_assets}\n"
 
-        text += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
+            section_text += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
 
+        return section_text
+
+    # Render sections in priority order
+    current_index = 1
+
+    if high_risk:
+        text += format_section(high_risk, "⭐ HIGH PRIORITY", current_index)
+        current_index += len(high_risk)
+
+    if med_risk:
+        text += format_section(med_risk, "⚠️ MEDIUM PRIORITY", current_index)
+        current_index += len(med_risk)
+
+    if low_risk:
+        text += format_section(low_risk, "ℹ️ LOW PRIORITY", current_index)
+        current_index += len(low_risk)
+
+    # Fallback for no scoring
+    if no_score:
+        text += format_section(no_score, "BANKRUPTCIES", current_index)
+
+    # Footer
     text += f"""
 {'=' * 80}
 Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -560,11 +924,17 @@ def main():
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
 
+    # AI Scoring
+    scored = score_bankruptcies(filtered)
+    high_count = len([r for r in scored if r.priority == "HIGH"])
+    if os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true':
+        logger.info(f"AI scoring: {high_count} HIGH priority, {len(scored)-high_count} other")
+
     # Generate email
     month_name = datetime(year, month, 1).strftime("%B %Y")
-    subject = f"Swedish Bankruptcy Report - {month_name} ({len(filtered)} bankruptcies)"
-    html_body = format_email_html(filtered, year, month)
-    plain_body = format_email_plain(filtered, year, month)
+    subject = f"Swedish Bankruptcy Report - {month_name} ({len(scored)} bankruptcies)"
+    html_body = format_email_html(scored, year, month)
+    plain_body = format_email_plain(scored, year, month)
 
     # Send or print
     if os.getenv('NO_EMAIL', '').lower() == 'true':
