@@ -605,6 +605,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
@@ -614,6 +615,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             margin: 0 auto;
             padding: 20px;
             background: #f5f5f5;
+        }}
+        @media only screen and (max-width: 600px) {{
+            body {{
+                padding: 0;
+            }}
         }}
         .container {{
             background: white;
@@ -637,6 +643,17 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             opacity: 0.9;
             font-size: 18px;
         }}
+        @media only screen and (max-width: 600px) {{
+            .header {{
+                padding: 24px 16px;
+            }}
+            .header h1 {{
+                font-size: 24px;
+            }}
+            .header p {{
+                font-size: 16px;
+            }}
+        }}
         .summary {{
             background: #f8fafc;
             padding: 24px 30px;
@@ -653,6 +670,16 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             display: block;
             font-weight: 700;
         }}
+        @media only screen and (max-width: 600px) {{
+            .summary {{
+                padding: 16px;
+            }}
+            .summary-stat {{
+                display: block;
+                margin-right: 0;
+                margin-bottom: 12px;
+            }}
+        }}
         .priority-summary {{
             display: flex;
             gap: 24px;
@@ -666,6 +693,13 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             padding: 12px;
             border-radius: 8px;
             background: white;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .priority-summary {{
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }}
         }}
         .priority-stat.high strong {{
             color: #dc2626;
@@ -696,6 +730,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             padding: 20px 30px;
             margin-top: 8px;
             border-left: 5px solid;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .section-header {{
+                padding: 16px;
+            }}
         }}
         .section-header.high {{
             background: #fef2f2;
@@ -747,6 +786,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         .cards-container {{
             padding: 16px 30px 30px 30px;
         }}
+        @media only screen and (max-width: 600px) {{
+            .cards-container {{
+                padding: 12px;
+            }}
+        }}
         .bankruptcy-card {{
             background: white;
             border: 1px solid #e5e7eb;
@@ -755,6 +799,13 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             padding: 24px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             transition: box-shadow 0.2s ease;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .bankruptcy-card {{
+                padding: 16px;
+                margin-bottom: 16px;
+                border-radius: 8px;
+            }}
         }}
         .bankruptcy-card:hover {{
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
@@ -772,6 +823,15 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             align-items: center;
             gap: 12px;
             flex: 1;
+            flex-wrap: wrap;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .card-header {{
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+            }}
         }}
         .card-number {{
             background: #f1f5f9;
@@ -787,6 +847,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             font-weight: 700;
             color: #1e293b;
         }}
+        @media only screen and (max-width: 600px) {{
+            .card-title h3 {{
+                font-size: 18px;
+            }}
+        }}
         .poit-link {{
             background: #3b82f6;
             color: white;
@@ -797,6 +862,13 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             text-decoration: none;
             white-space: nowrap;
             transition: background 0.2s ease;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .poit-link {{
+                width: 100%;
+                text-align: center;
+                display: block;
+            }}
         }}
         .poit-link:hover {{
             background: #2563eb;
@@ -844,6 +916,12 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             margin-bottom: 12px;
             align-items: flex-start;
         }}
+        @media only screen and (max-width: 600px) {{
+            .card-row {{
+                flex-direction: column;
+                gap: 12px;
+            }}
+        }}
         .card-row:last-child {{
             margin-bottom: 0;
         }}
@@ -857,6 +935,12 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         .card-col.full-width {{
             flex: none;
             width: 100%;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .card-col {{
+                flex: none;
+                width: 100%;
+            }}
         }}
         .label {{
             font-size: 12px;
@@ -881,6 +965,17 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .trustee-section {{
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 12px;
+            }}
+            .trustee-text {{
+                font-size: 13px;
+            }}
         }}
         .trustee-label {{
             font-size: 13px;
@@ -911,6 +1006,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         .financials-section h4 {{
             color: #166534;
         }}
+        @media only screen and (max-width: 600px) {{
+            .financials-section {{
+                padding: 12px;
+            }}
+        }}
         code {{
             background: #f1f5f9;
             padding: 3px 7px;
@@ -920,6 +1020,12 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             color: #334155;
             font-weight: 600;
         }}
+        @media only screen and (max-width: 600px) {{
+            code {{
+                font-size: 12px;
+                padding: 2px 5px;
+            }}
+        }}
         .footer {{
             background: #f8fafc;
             padding: 24px 30px;
@@ -927,6 +1033,11 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             font-size: 12px;
             color: #64748b;
             border-top: 2px solid #e5e7eb;
+        }}
+        @media only screen and (max-width: 600px) {{
+            .footer {{
+                padding: 16px;
+            }}
         }}
         .footer a {{
             color: #3b82f6;
