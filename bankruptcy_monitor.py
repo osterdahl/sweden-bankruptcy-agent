@@ -91,10 +91,15 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     # Parse and filter by month/year
                     parts = initiated_date.split('/')
                     if len(parts) != 3:
+                        logger.debug(f"Skipping bankruptcy - invalid date format: {initiated_date}")
                         continue
 
-                    init_month = int(parts[0])
-                    init_year = int(parts[2])
+                    try:
+                        init_month = int(parts[0])
+                        init_year = int(parts[2])
+                    except (ValueError, IndexError) as e:
+                        logger.warning(f"Failed to parse date '{initiated_date}' for {company_name}: {e}")
+                        continue
 
                     if init_month == month and init_year == year:
                         page_had_target_month = True
@@ -242,7 +247,8 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
                 emp_count = int(record.employees.replace(',', ''))
                 if emp_count < min_employees:
                     continue
-            except:
+            except (ValueError, AttributeError) as e:
+                logger.debug(f"Failed to parse employee count for {record.company_name}: {e}")
                 pass
 
         # Revenue filter (Net Sales in TSEK = thousands of SEK)
@@ -254,7 +260,8 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
                 revenue_sek = revenue_tsek * 1000  # Convert thousands to actual SEK
                 if revenue_sek < min_revenue:
                     continue
-            except:
+            except (ValueError, AttributeError) as e:
+                logger.debug(f"Failed to parse revenue for {record.company_name}: {e}")
                 pass
 
         filtered.append(record)
@@ -315,7 +322,8 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
                 score = min(score + 2, 10)
             elif emp_count >= 20:
                 score = min(score + 1, 10)
-    except:
+    except (ValueError, AttributeError) as e:
+        logger.debug(f"Failed to parse employee count for scoring: {e}")
         pass
 
     # Keyword analysis in company name
@@ -1247,9 +1255,21 @@ def main():
     records = scrape_tic_bankruptcies(year, month)
     logger.info(f"Scraped {len(records)} bankruptcies for {year}-{month:02d}")
 
+    if not records:
+        logger.warning(f"No bankruptcies found for {year}-{month:02d}. This may indicate:")
+        logger.warning("  1. TIC.io site structure changed (needs code update)")
+        logger.warning("  2. No bankruptcies filed this month (unlikely)")
+        logger.warning("  3. Network/timeout issue during scraping")
+        return
+
     # Filter
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
+
+    if not filtered:
+        logger.warning(f"All {len(records)} bankruptcies were filtered out.")
+        logger.warning("Check filter settings: FILTER_REGIONS, FILTER_INCLUDE_KEYWORDS, FILTER_MIN_EMPLOYEES, FILTER_MIN_REVENUE")
+        return
 
     # AI Scoring
     scored = score_bankruptcies(filtered)
