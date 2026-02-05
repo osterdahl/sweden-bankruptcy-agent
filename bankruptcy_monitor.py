@@ -474,42 +474,23 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             </div>
             """
 
-            # Trustee info section (only if available)
+            # Trustee info section (only if available) - single line with separators
             trustee_section = ""
             if r.trustee != 'N/A' or r.trustee_firm != 'N/A' or r.trustee_address != 'N/A':
-                trustee_rows = ""
+                trustee_parts = []
                 if r.trustee != 'N/A':
-                    trustee_rows += f"""
-                    <div class="card-row">
-                        <div class="card-col full-width">
-                            <span class="label">Trustee</span>
-                            <span class="value">{r.trustee}</span>
-                        </div>
-                    </div>
-                    """
+                    trustee_parts.append(f"<strong>{r.trustee}</strong>")
                 if r.trustee_firm != 'N/A':
-                    trustee_rows += f"""
-                    <div class="card-row">
-                        <div class="card-col full-width">
-                            <span class="label">Law Firm</span>
-                            <span class="value">{r.trustee_firm}</span>
-                        </div>
-                    </div>
-                    """
+                    trustee_parts.append(r.trustee_firm)
                 if r.trustee_address != 'N/A':
-                    trustee_rows += f"""
-                    <div class="card-row">
-                        <div class="card-col full-width">
-                            <span class="label">Address</span>
-                            <span class="value">{r.trustee_address}</span>
-                        </div>
-                    </div>
-                    """
+                    trustee_parts.append(r.trustee_address)
+
+                trustee_text = " <span class='trustee-separator'>•</span> ".join(trustee_parts)
 
                 trustee_section = f"""
                 <div class="card-section trustee-section">
-                    <h4>Trustee Contact</h4>
-                    {trustee_rows}
+                    <span class="trustee-label">👤 Trustee Contact:</span>
+                    <span class="trustee-text">{trustee_text}</span>
                 </div>
                 """
 
@@ -861,6 +842,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             display: flex;
             gap: 20px;
             margin-bottom: 12px;
+            align-items: flex-start;
         }}
         .card-row:last-child {{
             margin-bottom: 0;
@@ -870,6 +852,7 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             display: flex;
             flex-direction: column;
             gap: 4px;
+            align-items: flex-start;
         }}
         .card-col.full-width {{
             flex: none;
@@ -881,20 +864,43 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            line-height: 1.2;
         }}
         .value {{
             font-size: 15px;
             color: #1e293b;
             font-weight: 500;
+            line-height: 1.4;
         }}
         .trustee-section {{
             background: #fefce8;
-            border: 1px solid #fde68a;
-            border-radius: 8px;
-            padding: 16px;
+            border-left: 3px solid #facc15;
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }}
-        .trustee-section h4 {{
+        .trustee-label {{
+            font-size: 13px;
+            font-weight: 700;
             color: #854d0e;
+            white-space: nowrap;
+        }}
+        .trustee-text {{
+            font-size: 14px;
+            color: #713f12;
+            flex: 1;
+            line-height: 1.5;
+        }}
+        .trustee-text strong {{
+            font-weight: 700;
+        }}
+        .trustee-separator {{
+            color: #ca8a04;
+            font-weight: 600;
+            padding: 0 4px;
         }}
         .financials-section {{
             background: #f0fdf4;
@@ -1137,6 +1143,12 @@ def main():
     if os.getenv('NO_EMAIL', '').lower() == 'true':
         logger.info("Email sending skipped (NO_EMAIL=true)")
         print(plain_body)
+
+        # Save HTML to /tmp for preview
+        html_path = '/tmp/bankruptcy_email_sample.html'
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_body)
+        logger.info(f"HTML preview saved to {html_path}")
     else:
         send_email(subject, html_body, plain_body)
 
