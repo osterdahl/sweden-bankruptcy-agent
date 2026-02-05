@@ -93,11 +93,11 @@ jobs:
           YEAR: ${{ steps.date.outputs.year }}
           MONTH: ${{ steps.date.outputs.month }}
 
-          # Optional filters
+          # Optional filters (defaults: 5 employees, 1M SEK revenue)
           FILTER_REGIONS: ${{ secrets.FILTER_REGIONS }}
           FILTER_INCLUDE_KEYWORDS: ${{ secrets.FILTER_INCLUDE_KEYWORDS }}
-          FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES }}
-          FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE }}
+          FILTER_MIN_EMPLOYEES: ${{ secrets.FILTER_MIN_EMPLOYEES || '5' }}
+          FILTER_MIN_REVENUE: ${{ secrets.FILTER_MIN_REVENUE || '1000000' }}
 
           # Optional AI scoring (manual override or secret)
           AI_SCORING_ENABLED: ${{ github.event.inputs.enable_ai_scoring == 'true' && 'true' || secrets.AI_SCORING_ENABLED }}

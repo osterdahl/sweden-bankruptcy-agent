@@ -54,8 +54,8 @@ CSS is inline in `format_email_html()`
 **Adjust TIC.io selectors** (lines 60-180):
 If TIC.io changes their HTML structure, update CSS selectors
 
-**Add filtering logic** (lines 202-235):
-Simple environment variable-based filters
+**Add filtering logic** (lines 202-260):
+Simple environment variable-based filters with defaults (5 employees, 1M SEK revenue)
 
 ## AI Scoring System
 
@@ -84,7 +84,8 @@ SNI codes that score 8-10 (HIGH priority):
 ### Optional - Filtering
 - `FILTER_REGIONS` - Comma-separated (e.g., "Stockholm,Göteborg")
 - `FILTER_INCLUDE_KEYWORDS` - Match company name or business type
-- `FILTER_MIN_EMPLOYEES`, `FILTER_MIN_REVENUE`
+- `FILTER_MIN_EMPLOYEES` - Default: 5 (set to 0 to disable)
+- `FILTER_MIN_REVENUE` - Default: 1000000 SEK (1M, set to 0 to disable)
 - `YEAR`, `MONTH` - Override auto-detection
 - `NO_EMAIL=true` - Dry run
 

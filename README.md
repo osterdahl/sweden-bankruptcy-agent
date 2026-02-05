@@ -178,6 +178,10 @@ The email includes:
 
 Control what bankruptcies you receive:
 
+**Default filters** (applied automatically):
+- Minimum 5 employees
+- Minimum 1,000,000 SEK revenue
+
 ```bash
 # Only Stockholm & Göteborg
 FILTER_REGIONS=Stockholm,Göteborg
@@ -185,8 +189,13 @@ FILTER_REGIONS=Stockholm,Göteborg
 # Only IT & restaurant companies
 FILTER_INCLUDE_KEYWORDS=IT,restaurang,konsult
 
-# Only companies with 10+ employees
-FILTER_MIN_EMPLOYEES=10
+# Override minimum thresholds (examples)
+FILTER_MIN_EMPLOYEES=10  # Default: 5
+FILTER_MIN_REVENUE=5000000  # 5M SEK (Default: 1M SEK)
+
+# Disable filters by setting to 0
+FILTER_MIN_EMPLOYEES=0
+FILTER_MIN_REVENUE=0
 ```
 
 ## GitHub Actions

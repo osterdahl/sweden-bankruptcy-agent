@@ -219,7 +219,8 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
     """Filter records based on environment variables."""
     filter_regions = [r.strip() for r in os.getenv("FILTER_REGIONS", "").split(",") if r.strip()]
     filter_keywords = [k.strip().lower() for k in os.getenv("FILTER_INCLUDE_KEYWORDS", "").split(",") if k.strip()]
-    min_employees = int(os.getenv("FILTER_MIN_EMPLOYEES", "0") or "0")
+    min_employees = int(os.getenv("FILTER_MIN_EMPLOYEES", "5") or "5")  # Default: 5 employees
+    min_revenue = int(os.getenv("FILTER_MIN_REVENUE", "1000000") or "1000000")  # Default: 1M SEK
 
     filtered = []
 
@@ -240,6 +241,18 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
             try:
                 emp_count = int(record.employees.replace(',', ''))
                 if emp_count < min_employees:
+                    continue
+            except:
+                pass
+
+        # Revenue filter (Net Sales in TSEK = thousands of SEK)
+        if min_revenue > 0 and record.net_sales != 'N/A':
+            try:
+                # Parse "7,739 TSEK" format - remove commas, extract number, convert TSEK to SEK
+                revenue_str = record.net_sales.replace(',', '').replace('TSEK', '').strip()
+                revenue_tsek = int(revenue_str)
+                revenue_sek = revenue_tsek * 1000  # Convert thousands to actual SEK
+                if revenue_sek < min_revenue:
                     continue
             except:
                 pass
