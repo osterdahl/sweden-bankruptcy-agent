@@ -1,7 +1,0 @@
-org_number,company_name,declaration_date,court,status,city,region,business_type,employees,revenue,administrator,law_firm,source_url
-345678-9012,Restaurang Smak AB,2025-12-14,Uppsala tingsrätt,Försatt i konkurs,Göteborg,Stockholms län,Restaurang,8,2000000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/345678-9012
-567890-1234,Konsultbolaget AB,2025-12-12,Stockholms tingsrätt,Försatt i konkurs,Göteborg,Stockholms län,Konsult,3,800000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/567890-1234
-234567-8901,IT Solutions Sverige AB,2025-12-14,Uppsala tingsrätt,Försatt i konkurs,Stockholm,Västra Götalands län,IT,45,12000000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/234567-8901
-789012-3456,Tillverknings AB,2025-12-15,Uppsala tingsrätt,Försatt i konkurs,Stockholm,Stockholms län,Tillverkning,85,35000000.0,Anna Svensson,Mannheimer Swartling,https://poit.bolagsverket.se/poit-app/visa/789012-3456
-123456-7890,Byggföretaget AB,2025-12-27,Uppsala tingsrätt,Försatt i konkurs,Stockholm,Stockholms län,Bygg,15,5000000.0,Anna Svensson,Mannheimer Swartling,https://poit.bolagsverket.se/poit-app/visa/123456-7890
-890123-4567,Städservice Malmö AB,2025-12-16,Stockholms tingsrätt,Försatt i konkurs,Göteborg,Västra Götalands län,Städ,12,3500000.0,Erik Andersson,Vinge,https://poit.bolagsverket.se/poit-app/visa/890123-4567

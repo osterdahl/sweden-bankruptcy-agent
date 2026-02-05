@@ -413,7 +413,7 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
 # ============================================================================
 
 def format_email_html(records: List[BankruptcyRecord], year: int, month: int) -> str:
-    """Generate HTML email report with priority sections."""
+    """Generate modern card-based HTML email report with priority sections."""
     month_name = datetime(year, month, 1).strftime("%B %Y")
 
     # Split by priority
@@ -422,81 +422,159 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
     low_risk = [r for r in records if r.priority == "LOW"]
     no_score = [r for r in records if not r.priority]
 
-    # Helper function to render a table section
+    # Helper function to render a card-based section
     def render_section(section_records, title, badge_color, global_start_index):
         if not section_records:
             return ""
 
-        rows = ""
+        cards = ""
         for i, r in enumerate(section_records, global_start_index):
-            row_class = "even" if i % 2 == 0 else "odd"
-
-            # Details section
-            details = []
-            if r.priority and r.ai_reason:
-                details.append(f"<strong>AI Reasoning:</strong> {r.ai_reason} (Score: {r.ai_score}/10)")
-            if r.trustee != 'N/A':
-                details.append(f"<strong>Trustee:</strong> {r.trustee}")
-            if r.trustee_firm != 'N/A':
-                details.append(f"<strong>Firm:</strong> {r.trustee_firm}")
-            if r.trustee_address != 'N/A':
-                details.append(f"<strong>Address:</strong> {r.trustee_address}")
-            if r.employees != 'N/A':
-                details.append(f"<strong>Employees:</strong> {r.employees}")
-            if r.net_sales != 'N/A':
-                details.append(f"<strong>Net Sales:</strong> {r.net_sales}")
-            if r.total_assets != 'N/A':
-                details.append(f"<strong>Total Assets:</strong> {r.total_assets}")
-
-            details_html = " &nbsp;|&nbsp; ".join(details) if details else "No details"
-
             org_clean = r.org_number.replace('-', '')
             poit_link = f"https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}"
+
+            # AI reasoning section (prominent if available)
+            ai_section = ""
+            if r.priority and r.ai_reason:
+                ai_section = f"""
+                <div class="card-ai-reason">
+                    <div class="ai-score">Score: {r.ai_score}/10</div>
+                    <div class="ai-text">{r.ai_reason}</div>
+                </div>
+                """
+
+            # Company info section
+            company_info = f"""
+            <div class="card-section">
+                <div class="card-row">
+                    <div class="card-col">
+                        <span class="label">Org Number</span>
+                        <span class="value"><code>{r.org_number}</code></span>
+                    </div>
+                    <div class="card-col">
+                        <span class="label">Initiated</span>
+                        <span class="value">{r.initiated_date}</span>
+                    </div>
+                    <div class="card-col">
+                        <span class="label">Region</span>
+                        <span class="value">{r.region}</span>
+                    </div>
+                </div>
+                <div class="card-row">
+                    <div class="card-col full-width">
+                        <span class="label">Court</span>
+                        <span class="value">{r.court}</span>
+                    </div>
+                </div>
+                <div class="card-row">
+                    <div class="card-col full-width">
+                        <span class="label">Industry</span>
+                        <span class="value"><code>{r.sni_code}</code> {r.industry_name}</span>
+                    </div>
+                </div>
+            </div>
+            """
+
+            # Trustee info section (only if available)
+            trustee_section = ""
+            if r.trustee != 'N/A' or r.trustee_firm != 'N/A' or r.trustee_address != 'N/A':
+                trustee_rows = ""
+                if r.trustee != 'N/A':
+                    trustee_rows += f"""
+                    <div class="card-row">
+                        <div class="card-col full-width">
+                            <span class="label">Trustee</span>
+                            <span class="value">{r.trustee}</span>
+                        </div>
+                    </div>
+                    """
+                if r.trustee_firm != 'N/A':
+                    trustee_rows += f"""
+                    <div class="card-row">
+                        <div class="card-col full-width">
+                            <span class="label">Law Firm</span>
+                            <span class="value">{r.trustee_firm}</span>
+                        </div>
+                    </div>
+                    """
+                if r.trustee_address != 'N/A':
+                    trustee_rows += f"""
+                    <div class="card-row">
+                        <div class="card-col full-width">
+                            <span class="label">Address</span>
+                            <span class="value">{r.trustee_address}</span>
+                        </div>
+                    </div>
+                    """
+
+                trustee_section = f"""
+                <div class="card-section trustee-section">
+                    <h4>Trustee Contact</h4>
+                    {trustee_rows}
+                </div>
+                """
+
+            # Financials section (only if available)
+            financials_section = ""
+            if r.employees != 'N/A' or r.net_sales != 'N/A' or r.total_assets != 'N/A':
+                financial_cols = []
+                if r.employees != 'N/A':
+                    financial_cols.append(f"""
+                    <div class="card-col">
+                        <span class="label">Employees</span>
+                        <span class="value">{r.employees}</span>
+                    </div>
+                    """)
+                if r.net_sales != 'N/A':
+                    financial_cols.append(f"""
+                    <div class="card-col">
+                        <span class="label">Net Sales</span>
+                        <span class="value">{r.net_sales}</span>
+                    </div>
+                    """)
+                if r.total_assets != 'N/A':
+                    financial_cols.append(f"""
+                    <div class="card-col">
+                        <span class="label">Total Assets</span>
+                        <span class="value">{r.total_assets}</span>
+                    </div>
+                    """)
+
+                financials_section = f"""
+                <div class="card-section financials-section">
+                    <h4>Financials</h4>
+                    <div class="card-row">
+                        {''.join(financial_cols)}
+                    </div>
+                </div>
+                """
 
             # Priority badge
             priority_badge = f'<span class="priority-badge {badge_color}">{r.priority}</span>' if r.priority else ''
 
-            rows += f"""
-            <tr class="{row_class}">
-                <td style="text-align: center;">{i}</td>
-                <td>{priority_badge}<strong>{r.company_name}</strong></td>
-                <td style="text-align: center;"><code>{r.org_number}</code></td>
-                <td style="text-align: center;">{r.initiated_date}</td>
-                <td>{r.region}</td>
-                <td>{r.court}</td>
-                <td><code>{r.sni_code}</code> {r.industry_name}</td>
-                <td style="text-align: center;">
-                    <a href="{poit_link}" style="color: #0066cc; text-decoration: none;">POIT ↗</a>
-                </td>
-            </tr>
-            <tr class="{row_class}-detail">
-                <td colspan="8" style="padding: 8px 20px; font-size: 12px; color: #555; background: #fafafa;">
-                    {details_html}
-                </td>
-            </tr>
+            cards += f"""
+            <div class="bankruptcy-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="card-number">#{i}</span>
+                        {priority_badge}
+                        <h3>{r.company_name}</h3>
+                    </div>
+                    <a href="{poit_link}" class="poit-link">View in POIT ↗</a>
+                </div>
+                {ai_section}
+                {company_info}
+                {trustee_section}
+                {financials_section}
+            </div>
             """
 
         section_html = f"""
         <div class="section-header {badge_color}">
             <h2>{title} ({len(section_records)})</h2>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 40px;">#</th>
-                    <th style="width: 18%;">Company</th>
-                    <th style="width: 120px;">Org Number</th>
-                    <th style="width: 100px;">Date</th>
-                    <th style="width: 12%;">Region</th>
-                    <th style="width: 15%;">Court</th>
-                    <th style="width: 25%;">Industry</th>
-                    <th style="width: 70px;">Link</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows}
-            </tbody>
-        </table>
+        <div class="cards-container">
+            {cards}
+        </div>
         """
 
         return section_html
@@ -551,36 +629,36 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background: #f5f5f5;
         }}
         .container {{
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             overflow: hidden;
         }}
         .header {{
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             color: white;
-            padding: 30px;
+            padding: 40px 30px;
             text-align: center;
         }}
         .header h1 {{
             margin: 0 0 10px 0;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 600;
         }}
         .header p {{
             margin: 0;
             opacity: 0.9;
-            font-size: 16px;
+            font-size: 18px;
         }}
         .summary {{
             background: #f8fafc;
-            padding: 20px 30px;
+            padding: 24px 30px;
             border-bottom: 2px solid #e5e7eb;
         }}
         .summary-stat {{
@@ -590,45 +668,53 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         }}
         .summary-stat strong {{
             color: #1e3a8a;
-            font-size: 24px;
+            font-size: 28px;
             display: block;
+            font-weight: 700;
         }}
         .priority-summary {{
             display: flex;
-            gap: 20px;
-            padding: 20px 30px;
+            gap: 24px;
+            padding: 24px 30px;
             background: #f8fafc;
             border-bottom: 2px solid #e5e7eb;
         }}
         .priority-stat {{
             text-align: center;
             flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            background: white;
         }}
         .priority-stat.high strong {{
             color: #dc2626;
-            font-size: 32px;
+            font-size: 36px;
             display: block;
+            font-weight: 700;
         }}
         .priority-stat.medium strong {{
             color: #ea580c;
-            font-size: 32px;
+            font-size: 36px;
             display: block;
+            font-weight: 700;
         }}
         .priority-stat.low strong {{
             color: #64748b;
-            font-size: 32px;
+            font-size: 36px;
             display: block;
+            font-weight: 700;
         }}
         .priority-stat span {{
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             color: #64748b;
+            font-weight: 600;
         }}
         .section-header {{
-            padding: 15px 30px;
-            margin-top: 20px;
-            border-left: 4px solid;
+            padding: 20px 30px;
+            margin-top: 8px;
+            border-left: 5px solid;
         }}
         .section-header.high {{
             background: #fef2f2;
@@ -644,8 +730,8 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         }}
         .section-header h2 {{
             margin: 0;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 700;
         }}
         .section-header.high h2 {{
             color: #dc2626;
@@ -658,11 +744,10 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         }}
         .priority-badge {{
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-right: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }}
@@ -678,59 +763,171 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             background: #f1f5f9;
             color: #64748b;
         }}
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
+        .cards-container {{
+            padding: 16px 30px 30px 30px;
         }}
-        th {{
-            background: #1e40af;
-            color: white;
-            padding: 12px 10px;
-            text-align: left;
-            font-weight: 600;
+        .bankruptcy-card {{
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: box-shadow 0.2s ease;
+        }}
+        .bankruptcy-card:hover {{
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }}
+        .card-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }}
+        .card-title {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }}
+        .card-number {{
+            background: #f1f5f9;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 6px;
             font-size: 13px;
+            font-weight: 600;
+        }}
+        .card-title h3 {{
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+        }}
+        .poit-link {{
+            background: #3b82f6;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: background 0.2s ease;
+        }}
+        .poit-link:hover {{
+            background: #2563eb;
+            text-decoration: none;
+        }}
+        .card-ai-reason {{
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }}
+        .ai-score {{
+            background: #3b82f6;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+        }}
+        .ai-text {{
+            flex: 1;
+            font-size: 14px;
+            color: #1e40af;
+            line-height: 1.6;
+        }}
+        .card-section {{
+            margin-bottom: 20px;
+        }}
+        .card-section h4 {{
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }}
-        td {{
-            padding: 12px 10px;
-            border-bottom: 1px solid #e5e7eb;
+        .card-row {{
+            display: flex;
+            gap: 20px;
+            margin-bottom: 12px;
         }}
-        tr.odd {{
-            background: #ffffff;
+        .card-row:last-child {{
+            margin-bottom: 0;
         }}
-        tr.even {{
-            background: #f9fafb;
+        .card-col {{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }}
-        tr.odd-detail, tr.even-detail {{
-            background: #fafafa;
+        .card-col.full-width {{
+            flex: none;
+            width: 100%;
         }}
-        tr:hover.odd, tr:hover.even {{
-            background: #eff6ff;
+        .label {{
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }}
+        .value {{
+            font-size: 15px;
+            color: #1e293b;
+            font-weight: 500;
+        }}
+        .trustee-section {{
+            background: #fefce8;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 16px;
+        }}
+        .trustee-section h4 {{
+            color: #854d0e;
+        }}
+        .financials-section {{
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+        }}
+        .financials-section h4 {{
+            color: #166534;
         }}
         code {{
             background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 3px;
+            padding: 3px 7px;
+            border-radius: 4px;
             font-family: 'Courier New', monospace;
             font-size: 13px;
             color: #334155;
-        }}
-        a {{
-            color: #0066cc;
-            text-decoration: none;
-        }}
-        a:hover {{
-            text-decoration: underline;
+            font-weight: 600;
         }}
         .footer {{
             background: #f8fafc;
-            padding: 20px 30px;
+            padding: 24px 30px;
             text-align: center;
             font-size: 12px;
             color: #64748b;
             border-top: 2px solid #e5e7eb;
+        }}
+        .footer a {{
+            color: #3b82f6;
+            text-decoration: none;
+        }}
+        .footer a:hover {{
+            text-decoration: underline;
         }}
     </style>
 </head>
