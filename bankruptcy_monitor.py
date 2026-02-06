@@ -458,8 +458,8 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             if r.priority and r.ai_reason:
                 ai_section = f"""
                 <div class="card-ai-reason">
-                    <div class="ai-score">Score: {r.ai_score}/10</div>
-                    <div class="ai-text">{r.ai_reason}</div>
+                    <span class="ai-score">Score: {r.ai_score}/10</span>
+                    <span class="ai-text">{r.ai_reason}</span>
                 </div>
                 """
 
@@ -556,11 +556,10 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
             cards += f"""
             <div class="bankruptcy-card">
                 <div class="card-header">
-                    <div class="card-title">
-                        <span class="card-number">#{i}</span>
-                        {priority_badge}
-                        <h3>{r.company_name}</h3>
-                    </div>
+                    <span class="card-number">#{i}</span>
+                    {priority_badge}
+                    <h3>{r.company_name}</h3>
+                    <br>
                     <a href="{poit_link}" class="poit-link">View in POIT ↗</a>
                 </div>
                 {ai_section}
@@ -629,150 +628,107 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
+            color: #333333;
+            margin: 0;
             padding: 20px;
-            background: #f5f5f5;
-        }}
-        @media only screen and (max-width: 600px) {{
-            body {{
-                padding: 0;
-            }}
+            background-color: #f5f5f5;
         }}
         .container {{
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #ffffff;
         }}
         .header {{
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white;
-            padding: 40px 30px;
+            background-color: #2563eb;
+            color: #ffffff;
+            padding: 30px 20px;
             text-align: center;
         }}
         .header h1 {{
-            margin: 0 0 10px 0;
-            font-size: 32px;
-            font-weight: 600;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: bold;
         }}
         .header p {{
             margin: 0;
-            opacity: 0.9;
-            font-size: 18px;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .header {{
-                padding: 24px 16px;
-            }}
-            .header h1 {{
-                font-size: 24px;
-            }}
-            .header p {{
-                font-size: 16px;
-            }}
+            font-size: 16px;
         }}
         .summary {{
-            background: #f8fafc;
-            padding: 24px 30px;
+            background-color: #f8fafc;
+            padding: 20px;
             border-bottom: 2px solid #e5e7eb;
         }}
         .summary-stat {{
-            display: inline-block;
-            margin-right: 30px;
             font-size: 14px;
+            color: #64748b;
         }}
         .summary-stat strong {{
             color: #1e3a8a;
-            font-size: 28px;
+            font-size: 32px;
+            font-weight: bold;
             display: block;
-            font-weight: 700;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .summary {{
-                padding: 16px;
-            }}
-            .summary-stat {{
-                display: block;
-                margin-right: 0;
-                margin-bottom: 12px;
-            }}
+            margin-bottom: 4px;
         }}
         .priority-summary {{
-            display: flex;
-            gap: 24px;
-            padding: 24px 30px;
-            background: #f8fafc;
+            padding: 20px;
+            background-color: #f8fafc;
             border-bottom: 2px solid #e5e7eb;
         }}
         .priority-stat {{
+            display: inline-block;
             text-align: center;
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            background: white;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .priority-summary {{
-                flex-direction: column;
-                gap: 12px;
-                padding: 16px;
-            }}
+            padding: 12px 20px;
+            margin: 0 8px 8px 0;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
         }}
         .priority-stat.high strong {{
             color: #dc2626;
-            font-size: 36px;
+            font-size: 28px;
+            font-weight: bold;
             display: block;
-            font-weight: 700;
         }}
         .priority-stat.medium strong {{
             color: #ea580c;
-            font-size: 36px;
+            font-size: 28px;
+            font-weight: bold;
             display: block;
-            font-weight: 700;
         }}
         .priority-stat.low strong {{
             color: #64748b;
-            font-size: 36px;
+            font-size: 28px;
+            font-weight: bold;
             display: block;
-            font-weight: 700;
         }}
         .priority-stat span {{
             font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
             color: #64748b;
-            font-weight: 600;
+            font-weight: bold;
         }}
         .section-header {{
-            padding: 20px 30px;
+            padding: 16px 20px;
             margin-top: 8px;
-            border-left: 5px solid;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .section-header {{
-                padding: 16px;
-            }}
+            border-left: 4px solid;
         }}
         .section-header.high {{
-            background: #fef2f2;
+            background-color: #fef2f2;
             border-left-color: #dc2626;
         }}
         .section-header.medium {{
-            background: #fff7ed;
+            background-color: #fff7ed;
             border-left-color: #ea580c;
         }}
         .section-header.low {{
-            background: #f8fafc;
+            background-color: #f8fafc;
             border-left-color: #94a3b8;
         }}
         .section-header h2 {{
             margin: 0;
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: bold;
         }}
         .section-header.high h2 {{
             color: #dc2626;
@@ -785,287 +741,166 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
         }}
         .priority-badge {{
             display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
+            padding: 4px 8px;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }}
         .priority-badge.high {{
-            background: #fee2e2;
+            background-color: #fee2e2;
             color: #dc2626;
         }}
         .priority-badge.medium {{
-            background: #ffedd5;
+            background-color: #ffedd5;
             color: #ea580c;
         }}
         .priority-badge.low {{
-            background: #f1f5f9;
+            background-color: #f1f5f9;
             color: #64748b;
         }}
         .cards-container {{
-            padding: 16px 30px 30px 30px;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .cards-container {{
-                padding: 12px;
-            }}
+            padding: 20px;
         }}
         .bankruptcy-card {{
-            background: white;
+            background-color: #ffffff;
             border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            transition: box-shadow 0.2s ease;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .bankruptcy-card {{
-                padding: 16px;
-                margin-bottom: 16px;
-                border-radius: 8px;
-            }}
-        }}
-        .bankruptcy-card:hover {{
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            margin-bottom: 16px;
+            padding: 20px;
         }}
         .card-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
             border-bottom: 2px solid #f1f5f9;
         }}
-        .card-title {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-            flex-wrap: wrap;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .card-header {{
-                flex-direction: column;
-                gap: 12px;
-                margin-bottom: 16px;
-                padding-bottom: 12px;
-            }}
-        }}
         .card-number {{
-            background: #f1f5f9;
+            background-color: #f1f5f9;
             color: #64748b;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
         }}
         .card-title h3 {{
+            display: inline;
             margin: 0;
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: bold;
             color: #1e293b;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .card-title h3 {{
-                font-size: 18px;
-            }}
         }}
         .poit-link {{
-            background: #3b82f6;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: bold;
             text-decoration: none;
-            white-space: nowrap;
-            transition: background 0.2s ease;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .poit-link {{
-                width: 100%;
-                text-align: center;
-                display: block;
-            }}
-        }}
-        .poit-link:hover {{
-            background: #2563eb;
-            text-decoration: none;
+            display: inline-block;
+            margin-top: 8px;
         }}
         .card-ai-reason {{
-            background: #eff6ff;
+            background-color: #eff6ff;
             border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 16px;
-            align-items: flex-start;
+            padding: 12px;
+            margin-bottom: 16px;
         }}
         .ai-score {{
-            background: #3b82f6;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            white-space: nowrap;
+            background-color: #3b82f6;
+            color: #ffffff;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 8px;
         }}
         .ai-text {{
-            flex: 1;
             font-size: 14px;
             color: #1e40af;
-            line-height: 1.6;
+            line-height: 1.5;
         }}
         .card-section {{
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }}
         .card-section h4 {{
-            margin: 0 0 12px 0;
-            font-size: 14px;
-            font-weight: 700;
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            font-weight: bold;
             color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }}
         .card-row {{
-            display: flex;
-            gap: 20px;
-            margin-bottom: 12px;
-            align-items: flex-start;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .card-row {{
-                flex-direction: column;
-                gap: 12px;
-            }}
-        }}
-        .card-row:last-child {{
-            margin-bottom: 0;
+            margin-bottom: 8px;
         }}
         .card-col {{
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: flex-start;
-        }}
-        .card-col.full-width {{
-            flex: none;
-            width: 100%;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .card-col {{
-                flex: none;
-                width: 100%;
-            }}
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 8px;
+            vertical-align: top;
         }}
         .label {{
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
-            font-weight: 600;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            line-height: 1.2;
+            display: block;
         }}
         .value {{
-            font-size: 15px;
+            font-size: 14px;
             color: #1e293b;
-            font-weight: 500;
-            line-height: 1.4;
+            font-weight: normal;
+            display: block;
+            margin-top: 2px;
         }}
         .trustee-section {{
-            background: #fefce8;
+            background-color: #fefce8;
             border-left: 3px solid #facc15;
-            border-radius: 6px;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }}
-        @media only screen and (max-width: 600px) {{
-            .trustee-section {{
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-                padding: 12px;
-            }}
-            .trustee-text {{
-                font-size: 13px;
-            }}
+            padding: 12px;
         }}
         .trustee-label {{
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: bold;
             color: #854d0e;
-            white-space: nowrap;
+            display: block;
+            margin-bottom: 4px;
         }}
         .trustee-text {{
-            font-size: 14px;
+            font-size: 13px;
             color: #713f12;
-            flex: 1;
             line-height: 1.5;
         }}
         .trustee-text strong {{
-            font-weight: 700;
+            font-weight: bold;
         }}
         .trustee-separator {{
             color: #ca8a04;
-            font-weight: 600;
-            padding: 0 4px;
+            font-weight: bold;
         }}
         .financials-section {{
-            background: #f0fdf4;
+            background-color: #f0fdf4;
             border: 1px solid #bbf7d0;
-            border-radius: 8px;
-            padding: 16px;
+            padding: 12px;
         }}
         .financials-section h4 {{
             color: #166534;
         }}
-        @media only screen and (max-width: 600px) {{
-            .financials-section {{
-                padding: 12px;
-            }}
-        }}
         code {{
-            background: #f1f5f9;
-            padding: 3px 7px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            font-family: 'Courier New', Courier, monospace;
             font-size: 13px;
             color: #334155;
-            font-weight: 600;
-        }}
-        @media only screen and (max-width: 600px) {{
-            code {{
-                font-size: 12px;
-                padding: 2px 5px;
-            }}
+            font-weight: bold;
         }}
         .footer {{
-            background: #f8fafc;
-            padding: 24px 30px;
+            background-color: #f8fafc;
+            padding: 20px;
             text-align: center;
             font-size: 12px;
             color: #64748b;
             border-top: 2px solid #e5e7eb;
         }}
-        @media only screen and (max-width: 600px) {{
-            .footer {{
-                padding: 16px;
-            }}
-        }}
         .footer a {{
             color: #3b82f6;
             text-decoration: none;
-        }}
-        .footer a:hover {{
-            text-decoration: underline;
         }}
     </style>
 </head>
