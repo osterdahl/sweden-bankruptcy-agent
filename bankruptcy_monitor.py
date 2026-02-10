@@ -15,8 +15,10 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from string import Template
 
 from playwright.sync_api import sync_playwright
 
@@ -51,6 +53,7 @@ class BankruptcyRecord:
     ai_score: Optional[int] = None      # 1-10 priority score
     ai_reason: Optional[str] = None     # Brief explanation
     priority: Optional[str] = None      # "HIGH", "MEDIUM", "LOW"
+    trustee_email: Optional[str] = None  # Looked up from firm website
 
 
 # ============================================================================
@@ -97,19 +100,16 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     try:
                         init_month = int(parts[0])
                         init_year = int(parts[2])
-                    except (ValueError, IndexError) as e:
-                        logger.warning(f"Failed to parse date '{initiated_date}' for {company_name}: {e}")
+                    except ValueError:
+                        logger.warning(f"Failed to parse date: {initiated_date}")
                         continue
 
                     if init_month == month and init_year == year:
                         page_had_target_month = True
-                    elif init_month < month and init_year == year:
+                    elif init_year < year or (init_year == year and init_month < month):
                         found_past_target = True
                         break
-                    elif init_year < year:
-                        found_past_target = True
-                        break
-                    elif not (init_month == month and init_year == year):
+                    else:
                         continue
 
                     # Extract company name
@@ -137,14 +137,12 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                     sni_code = 'N/A'
                     industry_name = 'N/A'
 
-                    if sni_items and len(sni_items) > 0:
+                    if sni_items:
                         first_sni = sni_items[0]
                         code_elem = first_sni.query_selector('.bankruptcy-card__sni-code')
                         name_elem = first_sni.query_selector('.bankruptcy-card__sni-name')
-                        if code_elem:
-                            sni_code = code_elem.inner_text().strip() or 'N/A'
-                        if name_elem:
-                            industry_name = name_elem.inner_text().strip() or 'N/A'
+                        sni_code = code_elem.inner_text().strip() or 'N/A' if code_elem else 'N/A'
+                        industry_name = name_elem.inner_text().strip() or 'N/A' if name_elem else 'N/A'
 
                     # Extract trustee
                     trustee_name_elem = card.query_selector('.bankruptcy-card__trustee-name')
@@ -217,6 +215,150 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
 
 
 # ============================================================================
+# TRUSTEE EMAIL LOOKUP
+# ============================================================================
+
+def _extract_emails(text: str) -> List[str]:
+    """Extract email addresses from text using regex."""
+    pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    emails = re.findall(pattern, text)
+    excluded = {'noreply', 'no-reply', 'example.com', 'google.com',
+                'facebook.com', 'twitter.com', 'wixpress.com',
+                'sentry.io', 'schema.org', 'w3.org', 'wordpress'}
+    return [e for e in emails if not any(x in e.lower() for x in excluded)]
+
+
+def _pick_best_email(emails: List[str]) -> Optional[str]:
+    """Pick the best email — prefer individual addresses over generic ones."""
+    if not emails:
+        return None
+    generic = {'info', 'kontakt', 'contact', 'mail', 'reception', 'office'}
+    # Prefer individual/personal emails (not generic inboxes)
+    for e in emails:
+        if e.split('@')[0].lower() not in generic:
+            return e
+    # Fall back to generic if that's all there is
+    return emails[0]
+
+
+def _guess_domains(firm_name: str) -> List[str]:
+    """Generate likely website domains from a Swedish law firm name."""
+    name = firm_name
+    for suffix in [' Kommanditbolag', ' KB', ' AB', ' HB', ' Handelsbolag']:
+        name = name.replace(suffix, '')
+    name = name.strip()
+
+    char_map = {'ä': 'a', 'ö': 'o', 'å': 'a', 'é': 'e', 'ü': 'u',
+                'Ä': 'a', 'Ö': 'o', 'Å': 'a', 'É': 'e', 'Ü': 'u'}
+    normalized = ''.join(char_map.get(c, c) for c in name)
+    parts = normalized.lower().split()
+
+    # Strip common prefixes like "Advokatfirman"
+    stripped = parts
+    for prefix in ['advokatfirman', 'advokatfirma', 'advokatbyran', 'advokatbyra']:
+        if parts[0] == prefix and len(parts) > 1:
+            stripped = parts[1:]
+            break
+
+    # Strip trailing city names
+    cities = {'stockholm', 'goteborg', 'malmo', 'uppsala', 'linkoping', 'vasteras',
+              'orebro', 'norrkoping', 'helsingborg', 'jonkoping', 'umea', 'lund',
+              'boras', 'sundsvall', 'vaxjo', 'karlstad', 'karlskrona', 'falun',
+              'kalmar', 'halmstad', 'varnamo', 'uddevalla', 'skelleftea',
+              'eskilstuna', 'nykoping', 'avesta', 'norrland', 'dalarna',
+              'ostergotland', 'syd', 'vast', 'nord'}
+    core = stripped[:-1] if len(stripped) > 1 and stripped[-1] in cities else stripped
+
+    domains = []
+    if core:
+        domains.append(''.join(core) + '.se')
+    if stripped != core:
+        domains.append(''.join(stripped) + '.se')
+    if stripped:
+        domains.append(stripped[0] + '.se')
+    if core:
+        domains.append(''.join(core) + '.com')
+
+    return list(dict.fromkeys(domains))
+
+
+def _search_firm_email(page, firm_name: str) -> Optional[str]:
+    """Find email by guessing the firm's domain and visiting their website."""
+    domains = _guess_domains(firm_name)
+
+    for domain in domains:
+        for prefix in ['www.', '']:
+            url = f'https://{prefix}{domain}'
+            try:
+                resp = page.goto(url, timeout=4000)
+                if not resp or not resp.ok:
+                    continue
+                page.wait_for_timeout(300)
+
+                emails = _extract_emails(page.content())
+                best = _pick_best_email(emails)
+                if best:
+                    return best
+
+                # Try /kontakt page
+                try:
+                    resp2 = page.goto(f'{url}/kontakt', timeout=4000)
+                    if resp2 and resp2.ok:
+                        page.wait_for_timeout(300)
+                        emails = _extract_emails(page.content())
+                        best = _pick_best_email(emails)
+                        if best:
+                            return best
+                except Exception:
+                    pass
+            except Exception:
+                continue
+
+    return None
+
+
+def lookup_trustee_emails(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
+    """Look up trustee email addresses by searching for firm websites.
+
+    Deduplicates by firm name — each unique firm is looked up only once.
+    Enabled by LOOKUP_TRUSTEE_EMAIL=true environment variable.
+    """
+    if os.getenv('LOOKUP_TRUSTEE_EMAIL', 'false').lower() != 'true':
+        return records
+
+    unique_firms = {r.trustee_firm for r in records
+                    if r.trustee_firm and r.trustee_firm != 'N/A'}
+
+    if not unique_firms:
+        return records
+
+    logger.info(f"Looking up emails for {len(unique_firms)} unique trustee firms...")
+    firm_emails = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        for firm in unique_firms:
+            email = _search_firm_email(page, firm)
+            if email:
+                firm_emails[firm] = email
+                logger.info(f"  Found: {firm} → {email}")
+            else:
+                logger.debug(f"  No email found for {firm}")
+
+        browser.close()
+
+    logger.info(f"Found emails for {len(firm_emails)}/{len(unique_firms)} firms")
+
+    for r in records:
+        if r.trustee_firm in firm_emails:
+            r.trustee_email = firm_emails[r.trustee_firm]
+
+    return records
+
+
+# ============================================================================
 # FILTERING
 # ============================================================================
 
@@ -247,8 +389,7 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
                 emp_count = int(record.employees.replace(',', ''))
                 if emp_count < min_employees:
                     continue
-            except (ValueError, AttributeError) as e:
-                logger.debug(f"Failed to parse employee count for {record.company_name}: {e}")
+            except ValueError:
                 pass
 
         # Revenue filter (Net Sales in TSEK = thousands of SEK)
@@ -260,8 +401,7 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
                 revenue_sek = revenue_tsek * 1000  # Convert thousands to actual SEK
                 if revenue_sek < min_revenue:
                     continue
-            except (ValueError, AttributeError) as e:
-                logger.debug(f"Failed to parse revenue for {record.company_name}: {e}")
+            except ValueError:
                 pass
 
         filtered.append(record)
@@ -322,8 +462,7 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
                 score = min(score + 2, 10)
             elif emp_count >= 20:
                 score = min(score + 1, 10)
-    except (ValueError, AttributeError) as e:
-        logger.debug(f"Failed to parse employee count for scoring: {e}")
+    except ValueError:
         pass
 
     # Keyword analysis in company name
@@ -335,7 +474,7 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
     return score
 
 
-def validate_with_ai(record: BankruptcyRecord) -> Tuple[int, str]:
+def validate_with_ai(record: BankruptcyRecord) -> tuple[int, str]:
     """Use Claude API to validate/refine high-priority scores."""
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
@@ -386,11 +525,6 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
     ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
 
     if not ai_enabled:
-        # Feature disabled: add null scores, maintain current behavior
-        for r in records:
-            r.ai_score = None
-            r.ai_reason = None
-            r.priority = None
         return records
 
     logger.info("AI scoring enabled - analyzing bankruptcies...")
@@ -503,6 +637,8 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
                     trustee_parts.append(f"<strong>{r.trustee}</strong>")
                 if r.trustee_firm != 'N/A':
                     trustee_parts.append(r.trustee_firm)
+                if r.trustee_email:
+                    trustee_parts.append(f"<a href='mailto:{r.trustee_email}' style='color:#1d4ed8'>{r.trustee_email}</a>")
                 if r.trustee_address != 'N/A':
                     trustee_parts.append(r.trustee_address)
 
@@ -620,318 +756,18 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
     if no_score:
         sections_html += render_section(no_score, "Bankruptcies", "default", current_index)
 
-    html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {{
-            font-family: Arial, Helvetica, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }}
-        .container {{
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #ffffff;
-        }}
-        .header {{
-            background-color: #2563eb;
-            color: #ffffff;
-            padding: 30px 20px;
-            text-align: center;
-        }}
-        .header h1 {{
-            margin: 0 0 8px 0;
-            font-size: 28px;
-            font-weight: bold;
-        }}
-        .header p {{
-            margin: 0;
-            font-size: 16px;
-        }}
-        .summary {{
-            background-color: #f8fafc;
-            padding: 20px;
-            border-bottom: 2px solid #e5e7eb;
-        }}
-        .summary-stat {{
-            font-size: 14px;
-            color: #64748b;
-        }}
-        .summary-stat strong {{
-            color: #1e3a8a;
-            font-size: 32px;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 4px;
-        }}
-        .priority-summary {{
-            padding: 20px;
-            background-color: #f8fafc;
-            border-bottom: 2px solid #e5e7eb;
-        }}
-        .priority-stat {{
-            display: inline-block;
-            text-align: center;
-            padding: 12px 20px;
-            margin: 0 8px 8px 0;
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
-        }}
-        .priority-stat.high strong {{
-            color: #dc2626;
-            font-size: 28px;
-            font-weight: bold;
-            display: block;
-        }}
-        .priority-stat.medium strong {{
-            color: #ea580c;
-            font-size: 28px;
-            font-weight: bold;
-            display: block;
-        }}
-        .priority-stat.low strong {{
-            color: #64748b;
-            font-size: 28px;
-            font-weight: bold;
-            display: block;
-        }}
-        .priority-stat span {{
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #64748b;
-            font-weight: bold;
-        }}
-        .section-header {{
-            padding: 16px 20px;
-            margin-top: 8px;
-            border-left: 4px solid;
-        }}
-        .section-header.high {{
-            background-color: #fef2f2;
-            border-left-color: #dc2626;
-        }}
-        .section-header.medium {{
-            background-color: #fff7ed;
-            border-left-color: #ea580c;
-        }}
-        .section-header.low {{
-            background-color: #f8fafc;
-            border-left-color: #94a3b8;
-        }}
-        .section-header h2 {{
-            margin: 0;
-            font-size: 18px;
-            font-weight: bold;
-        }}
-        .section-header.high h2 {{
-            color: #dc2626;
-        }}
-        .section-header.medium h2 {{
-            color: #ea580c;
-        }}
-        .section-header.low h2 {{
-            color: #64748b;
-        }}
-        .priority-badge {{
-            display: inline-block;
-            padding: 4px 8px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }}
-        .priority-badge.high {{
-            background-color: #fee2e2;
-            color: #dc2626;
-        }}
-        .priority-badge.medium {{
-            background-color: #ffedd5;
-            color: #ea580c;
-        }}
-        .priority-badge.low {{
-            background-color: #f1f5f9;
-            color: #64748b;
-        }}
-        .cards-container {{
-            padding: 20px;
-        }}
-        .bankruptcy-card {{
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 16px;
-            padding: 20px;
-        }}
-        .card-header {{
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f1f5f9;
-        }}
-        .card-number {{
-            background-color: #f1f5f9;
-            color: #64748b;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-right: 8px;
-        }}
-        .card-title h3 {{
-            display: inline;
-            margin: 0;
-            font-size: 18px;
-            font-weight: bold;
-            color: #1e293b;
-        }}
-        .poit-link {{
-            background-color: #3b82f6;
-            color: #ffffff;
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: bold;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 8px;
-        }}
-        .card-ai-reason {{
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
-            padding: 12px;
-            margin-bottom: 16px;
-        }}
-        .ai-score {{
-            background-color: #3b82f6;
-            color: #ffffff;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: bold;
-            display: inline-block;
-            margin-right: 8px;
-        }}
-        .ai-text {{
-            font-size: 14px;
-            color: #1e40af;
-            line-height: 1.5;
-        }}
-        .card-section {{
-            margin-bottom: 16px;
-        }}
-        .card-section h4 {{
-            margin: 0 0 8px 0;
-            font-size: 13px;
-            font-weight: bold;
-            color: #64748b;
-            text-transform: uppercase;
-        }}
-        .card-row {{
-            margin-bottom: 8px;
-        }}
-        .card-col {{
-            display: inline-block;
-            margin-right: 20px;
-            margin-bottom: 8px;
-            vertical-align: top;
-        }}
-        .label {{
-            font-size: 11px;
-            color: #64748b;
-            font-weight: bold;
-            text-transform: uppercase;
-            display: block;
-        }}
-        .value {{
-            font-size: 14px;
-            color: #1e293b;
-            font-weight: normal;
-            display: block;
-            margin-top: 2px;
-        }}
-        .trustee-section {{
-            background-color: #fefce8;
-            border-left: 3px solid #facc15;
-            padding: 12px;
-        }}
-        .trustee-label {{
-            font-size: 12px;
-            font-weight: bold;
-            color: #854d0e;
-            display: block;
-            margin-bottom: 4px;
-        }}
-        .trustee-text {{
-            font-size: 13px;
-            color: #713f12;
-            line-height: 1.5;
-        }}
-        .trustee-text strong {{
-            font-weight: bold;
-        }}
-        .trustee-separator {{
-            color: #ca8a04;
-            font-weight: bold;
-        }}
-        .financials-section {{
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            padding: 12px;
-        }}
-        .financials-section h4 {{
-            color: #166534;
-        }}
-        code {{
-            background-color: #f1f5f9;
-            padding: 2px 6px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            color: #334155;
-            font-weight: bold;
-        }}
-        .footer {{
-            background-color: #f8fafc;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #64748b;
-            border-top: 2px solid #e5e7eb;
-        }}
-        .footer a {{
-            color: #3b82f6;
-            text-decoration: none;
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🇸🇪 Swedish Bankruptcy Report</h1>
-            <p>{month_name}</p>
-        </div>
+    # Load HTML template and fill placeholders
+    template_path = Path(__file__).parent / 'email_template.html'
+    template = Template(template_path.read_text(encoding='utf-8'))
 
-        <div class="summary">
-            <div class="summary-stat">
-                <strong>{len(records)}</strong>
-                <span>Total Bankruptcies</span>
-            </div>
-        </div>
-
-        {priority_summary}
-
-        {sections_html}
-
-        <div class="footer">
-            <p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} UTC</p>
-            <p>Data source: <a href="https://tic.io/en/oppna-data/konkurser">TIC.io Open Data</a></p>
-        </div>
-    </div>
-</body>
-</html>
-    """
-
-    return html
+    return template.substitute(
+        EMOJI='\U0001f1f8\U0001f1ea',
+        month_name=month_name,
+        total_count=len(records),
+        priority_summary=priority_summary,
+        sections_html=sections_html,
+        generated_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 def format_email_plain(records: List[BankruptcyRecord], year: int, month: int) -> str:
@@ -987,6 +823,9 @@ Total: {len(records)}"""
    Firm: {r.trustee_firm}
    Address: {r.trustee_address}
 """
+
+            if r.trustee_email:
+                section_text += f"   Email: {r.trustee_email}\n"
 
             if r.employees != 'N/A':
                 section_text += f"   Employees: {r.employees}\n"
@@ -1097,6 +936,9 @@ def main():
         logger.warning("  3. Network/timeout issue during scraping")
         return
 
+    # Trustee email lookup
+    records = lookup_trustee_emails(records)
+
     # Filter
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
@@ -1108,8 +950,8 @@ def main():
 
     # AI Scoring
     scored = score_bankruptcies(filtered)
-    high_count = len([r for r in scored if r.priority == "HIGH"])
     if os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true':
+        high_count = len([r for r in scored if r.priority == "HIGH"])
         logger.info(f"AI scoring: {high_count} HIGH priority, {len(scored)-high_count} other")
 
     # Generate email

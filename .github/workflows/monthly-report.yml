@@ -103,6 +103,9 @@ jobs:
           AI_SCORING_ENABLED: ${{ github.event.inputs.enable_ai_scoring == 'true' && 'true' || secrets.AI_SCORING_ENABLED }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
+          # Optional: Trustee email lookup
+          LOOKUP_TRUSTEE_EMAIL: ${{ secrets.LOOKUP_TRUSTEE_EMAIL }}
+
           # Skip email if requested
           NO_EMAIL: ${{ github.event.inputs.skip_email }}
         run: |
