@@ -8,10 +8,13 @@ Single source, complete data, no CAPTCHA, radical simplicity.
 Data source: https://tic.io/en/oppna-data/konkurser (free, public)
 """
 
+import json
 import logging
 import os
 import re
 import smtplib
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -241,119 +244,80 @@ def _pick_best_email(emails: List[str]) -> Optional[str]:
     return emails[0]
 
 
-def _guess_domains(firm_name: str) -> List[str]:
-    """Generate likely website domains from a Swedish law firm name."""
-    name = firm_name
-    for suffix in [' Kommanditbolag', ' KB', ' AB', ' HB', ' Handelsbolag']:
-        name = name.replace(suffix, '')
-    name = name.strip()
+def _search_brave_email(lawyer_name: str, firm_name: str) -> Optional[str]:
+    """Extract email from Brave Search snippets using the Brave Search API."""
+    api_key = os.getenv('BRAVE_API_KEY')
+    if not api_key:
+        return None
 
-    char_map = {'ä': 'a', 'ö': 'o', 'å': 'a', 'é': 'e', 'ü': 'u',
-                'Ä': 'a', 'Ö': 'o', 'Å': 'a', 'É': 'e', 'Ü': 'u'}
-    normalized = ''.join(char_map.get(c, c) for c in name)
-    parts = normalized.lower().split()
+    queries = [
+        f'"{lawyer_name}" "{firm_name}" advokat email',
+        f'"{lawyer_name}" "{firm_name}" kontakt e-post',
+        f'{lawyer_name} {firm_name} kontakt',
+    ]
 
-    # Strip common prefixes like "Advokatfirman"
-    stripped = parts
-    for prefix in ['advokatfirman', 'advokatfirma', 'advokatbyran', 'advokatbyra']:
-        if parts[0] == prefix and len(parts) > 1:
-            stripped = parts[1:]
-            break
+    seen_emails: List[str] = []
+    for q in queries:
+        try:
+            url = f'https://api.search.brave.com/res/v1/web/search?q={urllib.parse.quote(q)}&count=5'
+            req = urllib.request.Request(url, headers={
+                'X-Subscription-Token': api_key,
+                'Accept': 'application/json',
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            for result in data.get('web', {}).get('results', []):
+                text = ' '.join([result.get('title', ''), result.get('description', '')])
+                for c in _extract_emails(text):
+                    if c not in seen_emails:
+                        seen_emails.append(c)
+        except Exception as e:
+            logger.debug(f"Brave search error for query '{q}': {e}")
 
-    # Strip trailing city names
-    cities = {'stockholm', 'goteborg', 'malmo', 'uppsala', 'linkoping', 'vasteras',
-              'orebro', 'norrkoping', 'helsingborg', 'jonkoping', 'umea', 'lund',
-              'boras', 'sundsvall', 'vaxjo', 'karlstad', 'karlskrona', 'falun',
-              'kalmar', 'halmstad', 'varnamo', 'uddevalla', 'skelleftea',
-              'eskilstuna', 'nykoping', 'avesta', 'norrland', 'dalarna',
-              'ostergotland', 'syd', 'vast', 'nord'}
-    core = stripped[:-1] if len(stripped) > 1 and stripped[-1] in cities else stripped
-
-    domains = []
-    if core:
-        domains.append(''.join(core) + '.se')
-    if stripped != core:
-        domains.append(''.join(stripped) + '.se')
-    if stripped:
-        domains.append(stripped[0] + '.se')
-    if core:
-        domains.append(''.join(core) + '.com')
-
-    return list(dict.fromkeys(domains))
-
-
-def _search_firm_email(page, firm_name: str) -> Optional[str]:
-    """Find email by guessing the firm's domain and visiting their website."""
-    domains = _guess_domains(firm_name)
-
-    for domain in domains:
-        for prefix in ['www.', '']:
-            url = f'https://{prefix}{domain}'
-            try:
-                resp = page.goto(url, timeout=4000)
-                if not resp or not resp.ok:
-                    continue
-                page.wait_for_timeout(300)
-
-                emails = _extract_emails(page.content())
-                best = _pick_best_email(emails)
-                if best:
-                    return best
-
-                # Try /kontakt page
-                try:
-                    resp2 = page.goto(f'{url}/kontakt', timeout=4000)
-                    if resp2 and resp2.ok:
-                        page.wait_for_timeout(300)
-                        emails = _extract_emails(page.content())
-                        best = _pick_best_email(emails)
-                        if best:
-                            return best
-                except Exception:
-                    pass
-            except Exception:
-                continue
-
-    return None
+    return _pick_best_email(seen_emails)
 
 
 def lookup_trustee_emails(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
-    """Look up trustee email addresses by searching for firm websites.
+    """Look up trustee email addresses via Brave Search API.
 
-    Deduplicates by firm name — each unique firm is looked up only once.
+    Deduplicates by trustee/firm pair — each unique pair is looked up only once.
     Enabled by LOOKUP_TRUSTEE_EMAIL=true environment variable.
+    Requires BRAVE_API_KEY environment variable.
     """
     if os.getenv('LOOKUP_TRUSTEE_EMAIL', 'false').lower() != 'true':
         return records
 
-    unique_firms = {r.trustee_firm for r in records
-                    if r.trustee_firm and r.trustee_firm != 'N/A'}
-
-    if not unique_firms:
+    if not os.getenv('BRAVE_API_KEY'):
+        logger.warning("LOOKUP_TRUSTEE_EMAIL enabled but BRAVE_API_KEY not set. Skipping email lookup.")
         return records
 
-    logger.info(f"Looking up emails for {len(unique_firms)} unique trustee firms...")
-    firm_emails = {}
+    # Build set of unique (trustee_name, firm_name) pairs
+    unique_pairs = {(r.trustee, r.trustee_firm) for r in records
+                    if r.trustee != 'N/A' and r.trustee_firm and r.trustee_firm != 'N/A'}
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    if not unique_pairs:
+        return records
 
-        for firm in unique_firms:
-            email = _search_firm_email(page, firm)
-            if email:
-                firm_emails[firm] = email
-                logger.info(f"  Found: {firm} → {email}")
-            else:
-                logger.debug(f"  No email found for {firm}")
+    logger.info(f"Looking up emails for {len(unique_pairs)} unique trustee/firm pairs...")
+    found = 0
+    pair_emails = {}
 
-        browser.close()
+    for lawyer_name, firm_name in unique_pairs:
+        email = _search_brave_email(lawyer_name, firm_name)
+        if email:
+            pair_emails[(lawyer_name, firm_name)] = email
+            found += 1
+            logger.info(f"  Found: {lawyer_name} ({firm_name}) → {email}")
+        else:
+            logger.debug(f"  No email found for {lawyer_name} ({firm_name})")
 
-    logger.info(f"Found emails for {len(firm_emails)}/{len(unique_firms)} firms")
+    success_rate = (found / len(unique_pairs) * 100) if unique_pairs else 0
+    logger.info(f"Found emails for {found}/{len(unique_pairs)} pairs ({success_rate:.0f}% success)")
 
     for r in records:
-        if r.trustee_firm in firm_emails:
-            r.trustee_email = firm_emails[r.trustee_firm]
+        key = (r.trustee, r.trustee_firm)
+        if key in pair_emails:
+            r.trustee_email = pair_emails[key]
 
     return records
 
