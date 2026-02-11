@@ -250,16 +250,20 @@ def _search_brave_email(lawyer_name: str, firm_name: str) -> Optional[str]:
     if not api_key:
         return None
 
+    # Try exact-quoted names first (precise), then unquoted (handles "Last, First" comma format better)
     queries = [
-        f'"{lawyer_name}" "{firm_name}" advokat email',
+        f'"{lawyer_name}" "{firm_name}" email',
+        f'{lawyer_name} {firm_name} email',
         f'"{lawyer_name}" "{firm_name}" kontakt e-post',
         f'{lawyer_name} {firm_name} kontakt',
     ]
 
+    generic = {'info', 'kontakt', 'contact', 'mail', 'reception', 'office'}
     seen_emails: List[str] = []
     for q in queries:
         try:
-            url = f'https://api.search.brave.com/res/v1/web/search?q={urllib.parse.quote(q)}&count=5'
+            url = (f'https://api.search.brave.com/res/v1/web/search'
+                   f'?q={urllib.parse.quote(q)}&count=5&extra_snippets=true')
             req = urllib.request.Request(url, headers={
                 'X-Subscription-Token': api_key,
                 'Accept': 'application/json',
@@ -267,12 +271,18 @@ def _search_brave_email(lawyer_name: str, firm_name: str) -> Optional[str]:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
             for result in data.get('web', {}).get('results', []):
-                text = ' '.join([result.get('title', ''), result.get('description', '')])
-                for c in _extract_emails(text):
+                parts = [result.get('title', ''), result.get('url', ''), result.get('description', '')]
+                parts.extend(result.get('extra_snippets') or [])
+                for c in _extract_emails(' '.join(parts)):
                     if c not in seen_emails:
                         seen_emails.append(c)
         except Exception as e:
             logger.debug(f"Brave search error for query '{q}': {e}")
+
+        # Early exit if we already have a personal (non-generic) email
+        best = _pick_best_email(seen_emails)
+        if best and best.split('@')[0].lower() not in generic:
+            return best
 
     return _pick_best_email(seen_emails)
 
