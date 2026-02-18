@@ -43,10 +43,15 @@ def _get_connection() -> sqlite3.Connection:
             ai_score        INTEGER,
             ai_reason       TEXT,
             priority        TEXT,
+            asset_types     TEXT,
             first_seen_at   TEXT NOT NULL,
             PRIMARY KEY (org_number, initiated_date, trustee_email)
         )
     """)
+    # Migrate existing databases
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(bankruptcy_records)").fetchall()}
+    if "asset_types" not in cols:
+        conn.execute("ALTER TABLE bankruptcy_records ADD COLUMN asset_types TEXT")
     conn.commit()
     return conn
 
@@ -96,6 +101,28 @@ def deduplicate(records: List) -> List:
         f"(out of {len(records)} scraped)"
     )
     return new_records
+
+
+def update_scores(records: List) -> None:
+    """Write ai_score, ai_reason, priority, asset_types back to bankruptcy_records.
+
+    Called after score_bankruptcies() so scores persist across sessions and
+    are visible in the dashboard outreach queue.
+    """
+    if not records:
+        return
+    conn = _get_connection()
+    try:
+        for r in records:
+            conn.execute(
+                "UPDATE bankruptcy_records SET ai_score=?, ai_reason=?, priority=?, asset_types=? "
+                "WHERE org_number=? AND initiated_date=?",
+                (r.ai_score, r.ai_reason, r.priority, getattr(r, 'asset_types', None),
+                 r.org_number, r.initiated_date),
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_cached_keys() -> set:

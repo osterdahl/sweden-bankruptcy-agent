@@ -62,9 +62,10 @@ class BankruptcyRecord:
     net_sales: str
     total_assets: str
     region: str = ""
-    ai_score: Optional[int] = None      # 1-10 priority score
+    ai_score: Optional[int] = None      # 1-10 acquisition value score
     ai_reason: Optional[str] = None     # Brief explanation
     priority: Optional[str] = None      # "HIGH", "MEDIUM", "LOW"
+    asset_types: Optional[str] = None   # e.g. "code,media" — what Redpine could acquire
     trustee_email: Optional[str] = None  # Looked up from firm website
 
 
@@ -398,51 +399,54 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
 
 
 # ============================================================================
-# AI SCORING (HYBRID)
+# SCORING — Redpine data asset acquisition
 # ============================================================================
 
-# SNI code scoring table - High-value industries for data acquisition
+# SNI codes with strong signal for Redpine-relevant data assets
 HIGH_VALUE_SNI_CODES = {
-    '26': 10,  # Computer/electronic/optical manufacturing
-    '28': 9,   # Machinery and equipment
-    '33': 8,   # Repair/installation of machinery
-    '465': 9,  # ICT equipment wholesale
-    '58': 8,   # Publishing
-    '62': 10,  # Computer programming/consultancy
-    '63': 9,   # Information services
-    '69': 7,   # Legal/accounting
-    '71': 8,   # Architectural/engineering
-    '72': 10,  # Scientific R&D
-    '749': 8,  # Other professional/scientific/technical
+    '58': 10,  # Publishing — text/media rights (books, journals, software)
+    '59': 10,  # Film, video, sound production — media rights
+    '60': 9,   # Broadcasting — audio/video content
+    '62': 10,  # Computer programming/consultancy — source code, algorithms
+    '63': 9,   # Information services — databases, data products
+    '72': 10,  # Scientific R&D — research data, sensor data, datasets
+    '742': 9,  # Photography — image libraries
+    '90': 8,   # Creative arts — content rights, creative IP
+    '91': 7,   # Libraries/archives/museums — collections, rights
+    '26': 8,   # Computer/electronic manufacturing — firmware, embedded SW, CAD
+    '71': 7,   # Architectural/engineering — CAD drawings, technical specs
+    '73': 6,   # Advertising/market research — creative assets, research data
+    '85': 6,   # Education — courseware, educational content
 }
 
 LOW_VALUE_SNI_CODES = {
-    '56': 2,   # Food/beverage service
-    '68': 3,   # Real estate
+    '56': 1,   # Food/beverage service
+    '55': 1,   # Accommodation
+    '45': 1,   # Motor vehicle retail/repair
+    '47': 1,   # Retail
+    '68': 1,   # Real estate
+    '96': 1,   # Personal services (hair, laundry, etc.)
+    '41': 2,   # Building construction
+    '43': 2,   # Specialised construction
     '64': 2,   # Financial services (holding companies)
-    '96': 2,   # Personal services
 }
 
-def calculate_base_score(record: BankruptcyRecord) -> int:
-    """Rule-based scoring: SNI code + company size."""
-    score = 5  # Neutral baseline
 
-    # SNI code scoring (primary signal)
+def calculate_base_score(record: BankruptcyRecord) -> int:
+    """Rule-based scoring for Redpine data asset acquisition potential."""
+    score = 3  # Low baseline — most bankruptcies are not relevant
+
     sni = record.sni_code
     if sni and sni != 'N/A' and len(sni) >= 2:
-        # Check 2-digit match
         sni_prefix = sni[:2]
         if sni_prefix in HIGH_VALUE_SNI_CODES:
             score = HIGH_VALUE_SNI_CODES[sni_prefix]
         elif sni_prefix in LOW_VALUE_SNI_CODES:
             score = LOW_VALUE_SNI_CODES[sni_prefix]
-        # Check 3-digit match (more specific)
-        if len(sni) >= 3:
-            sni_3 = sni[:3]
-            if sni_3 in HIGH_VALUE_SNI_CODES:
-                score = HIGH_VALUE_SNI_CODES[sni_3]
+        if len(sni) >= 3 and sni[:3] in HIGH_VALUE_SNI_CODES:
+            score = HIGH_VALUE_SNI_CODES[sni[:3]]
 
-    # Company size boost (larger = more data infrastructure)
+    # Size boost — more employees = more accumulated data assets
     try:
         if record.employees and record.employees != 'N/A':
             emp_count = int(record.employees.replace(',', ''))
@@ -453,26 +457,36 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
     except ValueError:
         pass
 
-    # Keyword analysis in company name
-    data_keywords = ['data', 'tech', 'software', 'analytics', 'ai', 'cloud', 'digital']
-    name_lower = record.company_name.lower()
-    if any(kw in name_lower for kw in data_keywords):
+    # Company name signals — Redpine-specific keywords
+    asset_keywords = [
+        'data', 'tech', 'software', 'analytics', 'ai', 'cloud', 'digital',
+        'media', 'photo', 'film', 'studio', 'content', 'publish', 'förlag',
+        'sensor', 'robot', 'cad', 'design', 'research', 'lab',
+    ]
+    if any(kw in record.company_name.lower() for kw in asset_keywords):
         score = min(score + 1, 10)
 
     return score
 
 
 def validate_with_ai(record: BankruptcyRecord) -> tuple[int, str]:
-    """Use Claude API to validate/refine high-priority scores."""
+    """Score a record with Claude, identifying Redpine-relevant asset types."""
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
-        return (record.ai_score, "Rule-based only (no API key)")
+        return (record.ai_score, record.ai_reason or "Rule-based only")
 
     try:
         from anthropic import Anthropic
         client = Anthropic(api_key=api_key)
 
-        prompt = f"""Analyze this Swedish bankruptcy for data acquisition value (1-10 scale):
+        prompt = f"""You assess bankrupt Swedish companies for Redpine, which acquires data assets for AI training and licensing.
+
+Redpine buys:
+- code: software, firmware, ML models, algorithms, APIs
+- media: books, articles, images, photos, video, audio (with rights)
+- cad: engineering drawings, 3D models, technical specifications
+- sensor: sensor recordings, robotics data, scientific measurements
+- database: annotated datasets, research databases, domain corpora
 
 Company: {record.company_name}
 Industry: [{record.sni_code}] {record.industry_name}
@@ -481,73 +495,74 @@ Revenue: {record.net_sales}
 Assets: {record.total_assets}
 Region: {record.region}
 
-Focus on: likely data infrastructure, customer databases, valuable IP.
-Respond with ONLY: SCORE:X REASON:brief_explanation"""
+Score 1-10 acquisition value (10=must contact, 1=no interest).
+Pick asset types from: code, media, cad, sensor, database, none.
+
+Reply ONLY: SCORE:N ASSETS:type1,type2 REASON:one sentence"""
 
         message = client.messages.create(
-            model="claude-3-haiku-20240307",  # Cheaper model for validation
-            max_tokens=150,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=100,
             messages=[{"role": "user", "content": prompt}]
         )
 
         response = message.content[0].text.strip()
-
-        # Parse "SCORE:8 REASON:Tech company with large customer database"
         score_match = re.search(r'SCORE:(\d+)', response)
+        assets_match = re.search(r'ASSETS:([\w,]+)', response)
         reason_match = re.search(r'REASON:(.+)', response)
 
-        if score_match:
-            ai_score = int(score_match.group(1))
-            ai_reason = reason_match.group(1) if reason_match else response
-            return (ai_score, ai_reason)
-        else:
-            return (record.ai_score, f"AI validation: {response}")
+        ai_score = max(1, min(10, int(score_match.group(1)))) if score_match else record.ai_score
+        if assets_match and assets_match.group(1) != 'none':
+            record.asset_types = assets_match.group(1)
+        ai_reason = reason_match.group(1).strip() if reason_match else response
+
+        return (ai_score, ai_reason)
 
     except Exception as e:
-        logger.debug(f"AI validation failed for {record.company_name}: {e}")
-        return (record.ai_score, "Rule-based score (AI unavailable)")
+        logger.debug(f"AI scoring failed for {record.company_name}: {e}")
+        return (record.ai_score, record.ai_reason or "Rule-based score (AI unavailable)")
 
 
 def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
-    """Hybrid scoring: rule-based filter + AI validation for high candidates."""
-    ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
+    """Score all records for Redpine data asset acquisition value.
 
-    if not ai_enabled:
-        return records
-
-    logger.info("AI scoring enabled - analyzing bankruptcies...")
-
-    # Phase 1: Rule-based scoring for ALL records
+    Rule-based scoring always runs. AI scoring runs on ALL records when
+    AI_SCORING_ENABLED=true and ANTHROPIC_API_KEY is set.
+    """
+    # Rule-based always runs
     for record in records:
         base_score = calculate_base_score(record)
         record.ai_score = base_score
-
-        # Assign priority tier
         if base_score >= 8:
             record.priority = "HIGH"
-            record.ai_reason = "High-value industry + data-rich profile"
+            record.ai_reason = "High-value data asset profile"
         elif base_score >= 5:
             record.priority = "MEDIUM"
-            record.ai_reason = "Moderate data acquisition potential"
+            record.ai_reason = "Potential data assets"
         else:
             record.priority = "LOW"
-            record.ai_reason = "Limited data assets expected"
+            record.ai_reason = "Limited data asset potential"
 
-    # Phase 2: AI validation for HIGH priority only (cost control)
-    high_priority = [r for r in records if r.priority == "HIGH"]
+    # AI scoring: all records, not just HIGH
+    ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
+    if not ai_enabled or not os.getenv('ANTHROPIC_API_KEY'):
+        return records
 
-    if high_priority and os.getenv('ANTHROPIC_API_KEY'):
-        logger.info(f"Validating {len(high_priority)} HIGH priority candidates with Claude API...")
+    logger.info(f"AI scoring {len(records)} new records for Redpine acquisition value...")
+    for record in records:
+        ai_score, ai_reason = validate_with_ai(record)
+        record.ai_score = ai_score
+        record.ai_reason = ai_reason
+        if ai_score >= 8:
+            record.priority = "HIGH"
+        elif ai_score >= 5:
+            record.priority = "MEDIUM"
+        else:
+            record.priority = "LOW"
 
-        for record in high_priority:
-            ai_score, ai_reason = validate_with_ai(record)
-            record.ai_score = ai_score
-            record.ai_reason = ai_reason
-
-            # Re-classify if AI disagrees
-            if ai_score < 8:
-                record.priority = "MEDIUM" if ai_score >= 5 else "LOW"
-
+    high = sum(1 for r in records if r.priority == "HIGH")
+    med = sum(1 for r in records if r.priority == "MEDIUM")
+    logger.info(f"Scoring complete: {high} HIGH, {med} MEDIUM, {len(records)-high-med} LOW")
     return records
 
 
@@ -929,18 +944,27 @@ def main():
         logger.warning("  3. Network/timeout issue during scraping")
         return
 
-    # Deduplicate first — no point looking up emails for already-seen records
-    from scheduler import deduplicate
+    # Deduplicate — only process genuinely new records
+    from scheduler import deduplicate, update_scores
     records = deduplicate(records)
 
     if not records:
         logger.info("No new bankruptcies after deduplication. Nothing to report.")
         return
 
-    # Trustee email lookup (only for genuinely new records)
-    records = lookup_trustee_emails(records)
+    # Score ALL new records (rule-based always; AI when enabled)
+    records = score_bankruptcies(records)
+    update_scores(records)  # persist scores to DB
 
-    # Filter
+    # Email lookup and outreach only for HIGH/MEDIUM candidates
+    candidates = [r for r in records if r.priority in ('HIGH', 'MEDIUM')]
+    if candidates:
+        lookup_trustee_emails(candidates)
+        from outreach import stage_outreach
+        stage_outreach(candidates)
+        logger.info(f"Staged outreach for {len(candidates)} HIGH/MEDIUM candidates")
+
+    # Filter for email report
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
 
@@ -949,21 +973,11 @@ def main():
         logger.warning("Check filter settings: FILTER_REGIONS, FILTER_INCLUDE_KEYWORDS, FILTER_MIN_EMPLOYEES, FILTER_MIN_REVENUE")
         return
 
-    # AI Scoring
-    scored = score_bankruptcies(filtered)
-    if os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true':
-        high_count = len([r for r in scored if r.priority == "HIGH"])
-        logger.info(f"AI scoring: {high_count} HIGH priority, {len(scored)-high_count} other")
-
-    # Trustee outreach — stage for dashboard approval (gated by MAILGUN_OUTREACH_ENABLED=true)
-    from outreach import stage_outreach
-    stage_outreach(scored)
-
     # Generate email
     month_name = datetime(year, month, 1).strftime("%B %Y")
-    subject = f"Swedish Bankruptcy Report - {month_name} ({len(scored)} bankruptcies)"
-    html_body = format_email_html(scored, year, month)
-    plain_body = format_email_plain(scored, year, month)
+    subject = f"Swedish Bankruptcy Report - {month_name} ({len(filtered)} bankruptcies)"
+    html_body = format_email_html(filtered, year, month)
+    plain_body = format_email_plain(filtered, year, month)
 
     # Send or print
     if os.getenv('NO_EMAIL', '').lower() == 'true':

@@ -157,8 +157,14 @@ with tab_queue:
         rw_conn.close()
     else:
         pending = rw_conn.execute(
-            "SELECT id, org_number, trustee_email, company_name, subject, body "
-            "FROM outreach_log WHERE status = 'pending' ORDER BY id"
+            """SELECT o.id, o.org_number, o.trustee_email, o.company_name,
+                      o.subject, o.body,
+                      b.priority, b.ai_score, b.asset_types, b.ai_reason
+               FROM outreach_log o
+               LEFT JOIN bankruptcy_records b ON o.org_number = b.org_number
+               WHERE o.status = 'pending'
+               GROUP BY o.id
+               ORDER BY COALESCE(b.ai_score, 0) DESC, o.id"""
         ).fetchall()
 
         if not pending:
@@ -179,9 +185,17 @@ with tab_queue:
 
             st.divider()
 
-            for row_id, org_num, email, company, subject, body in pending:
+            _priority_badge = {'HIGH': '🔴 HIGH', 'MEDIUM': '🟡 MEDIUM', 'LOW': '🟢 LOW'}
+
+            for row_id, org_num, email, company, subject, body, priority, ai_score, asset_types, ai_reason in pending:
                 with st.container(border=True):
-                    st.markdown(f"**{company}** ({org_num})")
+                    badge = _priority_badge.get(priority, '⚪ —')
+                    score_str = f"{ai_score}/10" if ai_score else "—"
+                    st.markdown(f"**{company}** ({org_num}) &nbsp; {badge} &nbsp; Score: {score_str}")
+                    if asset_types:
+                        st.markdown(" ".join(f"`{t}`" for t in asset_types.split(",")))
+                    if ai_reason:
+                        st.caption(ai_reason)
                     st.markdown(f"To: `{email}`")
                     st.text_input("Subject", value=subject or "", key=f"subj_{row_id}", disabled=True)
 
