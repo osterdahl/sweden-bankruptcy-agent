@@ -175,9 +175,10 @@ def _send_via_mailgun(to_email: str, subject: str, body: str) -> tuple[str, Opti
         logger.error(f"  [FAILED] {msg}")
         return ("failed", None, msg)
 
+    api_url = os.getenv("MAILGUN_API_URL", "https://api.eu.mailgun.net/v3")
     try:
         resp = requests.post(
-            f"https://api.mailgun.net/v3/{domain}/messages",
+            f"{api_url}/{domain}/messages",
             auth=("api", api_key),
             data={"from": from_email, "to": [to_email], "subject": subject, "text": body},
             timeout=15,
