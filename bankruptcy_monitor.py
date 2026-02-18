@@ -27,6 +27,13 @@ from string import Template
 import requests
 from bs4 import BeautifulSoup
 
+# Load .env file if present (no-op if python-dotenv not installed)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -204,9 +211,9 @@ def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[
                 continue
 
             target_on_page += 1
+            results.append(record)
             if (record.org_number, record.initiated_date) not in cached:
                 new_on_page += 1
-                results.append(record)
 
         if found_past_target:
             logger.info(f'Passed target month {year}-{month:02d} on page {page_num}, stopping '
@@ -892,6 +899,11 @@ def main():
     """Main entry point."""
     logger.info("=== Swedish Bankruptcy Monitor (TIC.io) ===")
 
+    # Ensure DB tables exist (outreach_log needs to be visible in dashboard
+    # even when no new records are found this run)
+    from outreach import _get_db as _init_outreach_db
+    _init_outreach_db().close()
+
     # Determine target month
     year_env = os.getenv('YEAR')
     month_env = os.getenv('MONTH')
@@ -917,16 +929,16 @@ def main():
         logger.warning("  3. Network/timeout issue during scraping")
         return
 
-    # Trustee email lookup
-    records = lookup_trustee_emails(records)
-
-    # Deduplicate against previous runs
+    # Deduplicate first — no point looking up emails for already-seen records
     from scheduler import deduplicate
     records = deduplicate(records)
 
     if not records:
         logger.info("No new bankruptcies after deduplication. Nothing to report.")
         return
+
+    # Trustee email lookup (only for genuinely new records)
+    records = lookup_trustee_emails(records)
 
     # Filter
     filtered = filter_records(records)
