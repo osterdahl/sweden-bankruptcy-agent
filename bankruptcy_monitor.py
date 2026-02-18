@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import smtplib
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -23,7 +24,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 
-from playwright.sync_api import sync_playwright
+import requests
+from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(
@@ -63,156 +65,161 @@ class BankruptcyRecord:
 # SCRAPER
 # ============================================================================
 
+def _parse_card(card) -> Optional[BankruptcyRecord]:
+    """Extract a BankruptcyRecord from a BeautifulSoup card element."""
+    try:
+        date_el = card.select_one('.bankruptcy-card__dates .bankruptcy-card__value')
+        initiated_date = date_el.get_text(strip=True) if date_el else None
+        if not initiated_date:
+            return None
+
+        name_el = card.select_one('.bankruptcy-card__name a')
+        company_name = name_el.get_text(strip=True) if name_el else 'N/A'
+
+        org_el = card.select_one('.bankruptcy-card__org-number')
+        org_number = org_el.get_text(strip=True) if org_el else 'N/A'
+
+        region_el = card.select_one('.bankruptcy-card__detail .bankruptcy-card__value')
+        region = region_el.get_text(strip=True) if region_el else 'N/A'
+
+        court_el = card.select_one('.bankruptcy-card__court .bankruptcy-card__value')
+        court = court_el.get_text().strip().split('\n')[0].strip() if court_el else 'N/A'
+
+        sni_code = 'N/A'
+        industry_name = 'N/A'
+        sni_items = card.select('.bankruptcy-card__sni-item')
+        if sni_items:
+            code_el = sni_items[0].select_one('.bankruptcy-card__sni-code')
+            iname_el = sni_items[0].select_one('.bankruptcy-card__sni-name')
+            sni_code = code_el.get_text(strip=True) or 'N/A' if code_el else 'N/A'
+            industry_name = iname_el.get_text(strip=True) or 'N/A' if iname_el else 'N/A'
+
+        trustee_el = card.select_one('.bankruptcy-card__trustee-name')
+        trustee = trustee_el.get_text(strip=True) if trustee_el else 'N/A'
+
+        firm_el = card.select_one('.bankruptcy-card__trustee-company')
+        trustee_firm = firm_el.get_text(strip=True) if firm_el else 'N/A'
+        trustee_firm = re.sub(r'^c/o\s+', '', trustee_firm)
+
+        addr_el = card.select_one('.bankruptcy-card__trustee-address')
+        trustee_address = addr_el.get_text().strip().replace('\n', ', ') if addr_el else 'N/A'
+
+        employees = net_sales = total_assets = 'N/A'
+        for item in card.select('.bankruptcy-card__financial-item'):
+            label_el = item.select_one('.bankruptcy-card__financial-label')
+            value_el = item.select_one('.bankruptcy-card__financial-value')
+            if not label_el or not value_el:
+                continue
+            label = label_el.get_text(strip=True)
+            value = value_el.get_text(strip=True)
+            if 'Number of employees' in label:
+                employees = value
+            elif 'Net sales' in label:
+                net_sales = value
+            elif 'Total assets' in label:
+                total_assets = value
+
+        return BankruptcyRecord(
+            company_name=company_name,
+            org_number=org_number,
+            initiated_date=initiated_date,
+            court=court,
+            sni_code=sni_code,
+            industry_name=industry_name,
+            trustee=trustee,
+            trustee_firm=trustee_firm,
+            trustee_address=trustee_address,
+            employees=employees,
+            net_sales=net_sales,
+            total_assets=total_assets,
+            region=region,
+        )
+    except Exception as e:
+        logger.warning(f'Error parsing card: {e}')
+        return None
+
+
 def scrape_tic_bankruptcies(year: int, month: int, max_pages: int = 10) -> List[BankruptcyRecord]:
-    """Scrape TIC.io bankruptcies for specified year/month."""
+    """Scrape TIC.io bankruptcies using HTTP + BeautifulSoup.
+
+    Uses the SQLite DB as a persistent cache. Stops paginating as soon as
+    all target-month records on a page are already cached — so repeated runs
+    only download new records (delta).
+    """
+    from scheduler import get_cached_keys
+    cached = get_cached_keys()
+    logger.info(f'Cache: {len(cached)} records in DB')
+
     results = []
+    session = requests.Session()
+    session.headers['User-Agent'] = 'Mozilla/5.0 (compatible; BankruptcyMonitor/2.0)'
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    for page_num in range(1, max_pages + 1):
+        url = (
+            f'https://tic.io/en/oppna-data/konkurser'
+            f'?pageNumber={page_num}&pageSize=100&q=&sortBy=initiatedDate%3Adesc'
+        )
+        logger.info(f'Fetching TIC.io page {page_num}...')
 
-        for page_num in range(1, max_pages + 1):
-            logger.info(f'Fetching TIC.io page {page_num}...')
+        try:
+            resp = session.get(url, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f'Failed to fetch page {page_num}: {e}')
+            break
 
-            url = f'https://tic.io/en/oppna-data/konkurser?pageNumber={page_num}&pageSize=100&q=&sortBy=initiatedDate%3Adesc'
-            page.goto(url, timeout=60000)
-            page.wait_for_selector('.bankruptcy-card', timeout=10000)
-            page.wait_for_timeout(1000)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        cards = soup.select('.bankruptcy-card')
+        logger.info(f'  Found {len(cards)} cards on page {page_num}')
 
-            cards = page.query_selector_all('.bankruptcy-card')
-            logger.info(f'  Found {len(cards)} cards on page {page_num}')
+        if not cards:
+            break
 
-            page_had_target_month = False
-            found_past_target = False
+        found_past_target = False
+        target_on_page = 0
+        new_on_page = 0
 
-            for card in cards:
-                try:
-                    # Extract initiated date
-                    date_value = card.query_selector('.bankruptcy-card__dates .bankruptcy-card__value')
-                    initiated_date = date_value.inner_text().strip() if date_value else None
-
-                    if not initiated_date:
-                        continue
-
-                    # Parse and filter by month/year
-                    parts = initiated_date.split('/')
-                    if len(parts) != 3:
-                        logger.debug(f"Skipping bankruptcy - invalid date format: {initiated_date}")
-                        continue
-
-                    try:
-                        init_month = int(parts[0])
-                        init_year = int(parts[2])
-                    except ValueError:
-                        logger.warning(f"Failed to parse date: {initiated_date}")
-                        continue
-
-                    if init_month == month and init_year == year:
-                        page_had_target_month = True
-                    elif init_year < year or (init_year == year and init_month < month):
-                        found_past_target = True
-                        break
-                    else:
-                        continue
-
-                    # Extract company name
-                    name_elem = card.query_selector('.bankruptcy-card__name a')
-                    company_name = name_elem.inner_text().strip() if name_elem else 'N/A'
-
-                    # Extract org number
-                    org_elem = card.query_selector('.bankruptcy-card__org-number')
-                    org_number = org_elem.inner_text().strip() if org_elem else 'N/A'
-
-                    # Extract region
-                    region_elem = card.query_selector('.bankruptcy-card__detail .bankruptcy-card__value')
-                    region = region_elem.inner_text().strip() if region_elem else 'N/A'
-
-                    # Extract court
-                    court_elem = card.query_selector('.bankruptcy-card__court .bankruptcy-card__value')
-                    if court_elem:
-                        court_text = court_elem.inner_text().strip()
-                        court = court_text.split('\n')[0]
-                    else:
-                        court = 'N/A'
-
-                    # Extract SNI code and industry
-                    sni_items = card.query_selector_all('.bankruptcy-card__sni-item')
-                    sni_code = 'N/A'
-                    industry_name = 'N/A'
-
-                    if sni_items:
-                        first_sni = sni_items[0]
-                        code_elem = first_sni.query_selector('.bankruptcy-card__sni-code')
-                        name_elem = first_sni.query_selector('.bankruptcy-card__sni-name')
-                        sni_code = code_elem.inner_text().strip() or 'N/A' if code_elem else 'N/A'
-                        industry_name = name_elem.inner_text().strip() or 'N/A' if name_elem else 'N/A'
-
-                    # Extract trustee
-                    trustee_name_elem = card.query_selector('.bankruptcy-card__trustee-name')
-                    trustee = trustee_name_elem.inner_text().strip() if trustee_name_elem else 'N/A'
-
-                    trustee_firm_elem = card.query_selector('.bankruptcy-card__trustee-company')
-                    trustee_firm = trustee_firm_elem.inner_text().strip() if trustee_firm_elem else 'N/A'
-                    trustee_firm = re.sub(r'^c/o\s+', '', trustee_firm)
-
-                    # Extract trustee address
-                    address_elem = card.query_selector('.bankruptcy-card__trustee-address')
-                    trustee_address = address_elem.inner_text().strip().replace('\n', ', ') if address_elem else 'N/A'
-
-                    # Extract financial data
-                    financial_items = card.query_selector_all('.bankruptcy-card__financial-item')
-                    employees = 'N/A'
-                    net_sales = 'N/A'
-                    total_assets = 'N/A'
-
-                    for item in financial_items:
-                        label = item.query_selector('.bankruptcy-card__financial-label')
-                        value = item.query_selector('.bankruptcy-card__financial-value')
-
-                        if not label or not value:
-                            continue
-
-                        label_text = label.inner_text().strip()
-                        value_text = value.inner_text().strip()
-
-                        if 'Number of employees' in label_text:
-                            employees = value_text
-                        elif 'Net sales' in label_text:
-                            net_sales = value_text
-                        elif 'Total assets' in label_text:
-                            total_assets = value_text
-
-                    results.append(BankruptcyRecord(
-                        company_name=company_name,
-                        org_number=org_number,
-                        initiated_date=initiated_date,
-                        court=court,
-                        sni_code=sni_code,
-                        industry_name=industry_name,
-                        trustee=trustee,
-                        trustee_firm=trustee_firm,
-                        trustee_address=trustee_address,
-                        employees=employees,
-                        net_sales=net_sales,
-                        total_assets=total_assets,
-                        region=region
-                    ))
-
-                except Exception as e:
-                    logger.warning(f'Error processing card: {e}')
-                    continue
-
-            # Stop pagination if we've passed the target month
-            if found_past_target:
-                logger.info(f'Passed target month {year}-{month:02d}, stopping pagination')
-                break
-
-            # Continue if we haven't found target month yet (still in future months)
-            if not page_had_target_month:
-                logger.debug(f'No matches on page {page_num}, continuing to next page')
+        for card in cards:
+            record = _parse_card(card)
+            if record is None:
                 continue
 
-        browser.close()
+            parts = record.initiated_date.split('/')
+            if len(parts) != 3:
+                continue
+            try:
+                init_month = int(parts[0])
+                init_year = int(parts[2])
+            except ValueError:
+                logger.warning(f'Failed to parse date: {record.initiated_date}')
+                continue
+
+            # Passed the target month — no point fetching further pages
+            if init_year < year or (init_year == year and init_month < month):
+                found_past_target = True
+                break
+
+            # Future month — skip card, keep going
+            if init_month != month or init_year != year:
+                continue
+
+            target_on_page += 1
+            if (record.org_number, record.initiated_date) not in cached:
+                new_on_page += 1
+                results.append(record)
+
+        if found_past_target:
+            logger.info(f'Passed target month {year}-{month:02d} on page {page_num}, stopping '
+                        f'({new_on_page} new records collected from this page before cutoff)')
+            break
+
+        # All target-month records on this page already in cache → caught up
+        if target_on_page > 0 and new_on_page == 0:
+            logger.info(f'Page {page_num}: {target_on_page} records all cached, stopping')
+            break
+
+        if page_num < max_pages:
+            time.sleep(0.5)
 
     return results
 
@@ -913,6 +920,14 @@ def main():
     # Trustee email lookup
     records = lookup_trustee_emails(records)
 
+    # Deduplicate against previous runs
+    from scheduler import deduplicate
+    records = deduplicate(records)
+
+    if not records:
+        logger.info("No new bankruptcies after deduplication. Nothing to report.")
+        return
+
     # Filter
     filtered = filter_records(records)
     logger.info(f"Filtered to {len(filtered)} matching bankruptcies")
@@ -927,6 +942,10 @@ def main():
     if os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true':
         high_count = len([r for r in scored if r.priority == "HIGH"])
         logger.info(f"AI scoring: {high_count} HIGH priority, {len(scored)-high_count} other")
+
+    # Trustee outreach — stage for dashboard approval (gated by MAILGUN_OUTREACH_ENABLED=true)
+    from outreach import stage_outreach
+    stage_outreach(scored)
 
     # Generate email
     month_name = datetime(year, month, 1).strftime("%B %Y")
