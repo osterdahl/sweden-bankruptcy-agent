@@ -536,8 +536,8 @@ Reply ONLY: SCORE:N ASSETS:type1,type2 REASON:one sentence"""
         return (ai_score, ai_reason)
 
     except Exception as e:
-        logger.debug(f"AI scoring failed for {record.company_name}: {e}")
-        return (record.ai_score, record.ai_reason or "Rule-based score (AI unavailable)")
+        logger.warning(f"AI scoring failed for {record.company_name}: {e}")
+        return (record.ai_score, f"[AI failed: {type(e).__name__}] {record.ai_reason or 'Rule-based only'}")
 
 
 def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
@@ -570,10 +570,20 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
 
     # AI scoring: all records, not just HIGH
     ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
-    if not ai_enabled or not os.getenv('ANTHROPIC_API_KEY'):
+    if not ai_enabled:
+        logger.info("AI scoring disabled (AI_SCORING_ENABLED != true) — rule-based scores only")
         return records
 
-    logger.info(f"AI scoring {len(records)} new records for Redpine acquisition value...")
+    if not os.getenv('ANTHROPIC_API_KEY'):
+        logger.warning(
+            "AI_SCORING_ENABLED=true but ANTHROPIC_API_KEY is not set — "
+            "falling back to rule-based scores. Set ANTHROPIC_API_KEY in .env to enable AI scoring."
+        )
+        return records
+
+    logger.info(f"AI scoring {len(records)} records for Redpine acquisition value...")
+    ai_ok = 0
+    ai_failed = 0
     for record in records:
         ai_score, ai_reason = validate_with_ai(record)
         record.ai_score = ai_score
@@ -584,10 +594,23 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
             record.priority = "MEDIUM"
         else:
             record.priority = "LOW"
+        if ai_reason.startswith("[AI failed"):
+            ai_failed += 1
+        else:
+            ai_ok += 1
 
     high = sum(1 for r in records if r.priority == "HIGH")
     med = sum(1 for r in records if r.priority == "MEDIUM")
-    logger.info(f"Scoring complete: {high} HIGH, {med} MEDIUM, {len(records)-high-med} LOW")
+    logger.info(
+        f"Scoring complete: {high} HIGH, {med} MEDIUM, {len(records)-high-med} LOW — "
+        f"AI scored {ai_ok}/{len(records)}"
+        + (f", {ai_failed} failed (rule-based fallback)" if ai_failed else "")
+    )
+    if ai_failed == len(records):
+        logger.warning(
+            f"AI scoring failed for ALL {ai_failed} records — check ANTHROPIC_API_KEY is valid "
+            "and the Anthropic API is reachable."
+        )
     return records
 
 

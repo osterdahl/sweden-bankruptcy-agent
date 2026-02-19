@@ -112,11 +112,27 @@ with tab_overview:
     col3.metric("Emails Sent", sent)
     col4.metric("Emails Failed/Bounced", failed)
 
-    # Score unscored records
+    # Scoring status + backfill button
     if table_exists(conn, "bankruptcy_records"):
+        import os
+        ai_enabled = os.getenv("AI_SCORING_ENABLED", "false").lower() == "true"
+        has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+        ai_failed_count = conn.execute(
+            "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_reason LIKE '[AI failed%'"
+        ).fetchone()[0]
         unscored = conn.execute(
             "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_score IS NULL"
         ).fetchone()[0]
+
+        if not ai_enabled:
+            st.caption("ℹ️ AI scoring disabled — set AI_SCORING_ENABLED=true in .env to enable.")
+        elif not has_key:
+            st.warning("⚠️ AI_SCORING_ENABLED=true but ANTHROPIC_API_KEY is not set. Scores are rule-based only.")
+        elif ai_failed_count > 0:
+            st.warning(f"⚠️ AI scoring failed for {ai_failed_count} records (API error). Check logs and ANTHROPIC_API_KEY.")
+        else:
+            st.caption("✓ AI scoring active.")
+
         if unscored > 0:
             st.info(f"{unscored} records have not been scored yet.")
             if st.button(f"Score {unscored} unscored records"):
