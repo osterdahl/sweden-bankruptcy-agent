@@ -431,6 +431,23 @@ LOW_VALUE_SNI_CODES = {
     '64': 2,   # Financial services (holding companies)
 }
 
+# Maps SNI prefix → likely Redpine asset types (rule-based, always populated)
+SNI_ASSET_TYPES = {
+    '58': 'media',          # Publishing
+    '59': 'media',          # Film/video/sound production
+    '60': 'media',          # Broadcasting
+    '62': 'code',           # Computer programming
+    '63': 'database',       # Information services
+    '72': 'database,sensor',# Scientific R&D
+    '742': 'media',         # Photography
+    '90': 'media',          # Creative arts
+    '91': 'media,database', # Libraries/archives
+    '26': 'code',           # Computer/electronic manufacturing
+    '71': 'cad',            # Architectural/engineering
+    '73': 'media,database', # Advertising/market research
+    '85': 'media',          # Education
+}
+
 
 def calculate_base_score(record: BankruptcyRecord) -> int:
     """Rule-based scoring for Redpine data asset acquisition potential."""
@@ -542,6 +559,14 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
         else:
             record.priority = "LOW"
             record.ai_reason = "Limited data asset potential"
+
+        # Infer asset types from SNI code (AI may override this later)
+        if not record.asset_types and record.sni_code and record.sni_code != 'N/A':
+            sni = record.sni_code
+            record.asset_types = (
+                SNI_ASSET_TYPES.get(sni[:3])
+                or SNI_ASSET_TYPES.get(sni[:2])
+            )
 
     # AI scoring: all records, not just HIGH
     ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
