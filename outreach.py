@@ -135,19 +135,68 @@ def already_contacted(conn: sqlite3.Connection, org_number: str, trustee_email: 
 # EMAIL TEMPLATE
 # ============================================================================
 
-def _build_outreach_body(company_name: str, trustee_name: str) -> str:
-    """Build a plain-text outreach email body."""
-    return (
-        f"Dear {trustee_name},\n\n"
-        f"We noticed that {company_name} recently entered bankruptcy proceedings. "
-        f"We specialize in acquiring data assets and digital infrastructure from "
-        f"companies in transition and would welcome the opportunity to discuss "
-        f"whether there are assets we could help monetize for the estate.\n\n"
-        f"We would be happy to arrange a brief call at your convenience.\n\n"
-        f"Best regards\n\n"
-        f"---\n"
-        f"To unsubscribe from future messages, reply with 'UNSUBSCRIBE' in the subject line."
-    )
+TEMPLATE_PATH = Path(__file__).parent / "outreach_template.md"
+
+
+def _load_template() -> tuple[str, str]:
+    """Load subject and body from outreach_template.md.
+
+    Returns (subject, body). Falls back to hardcoded defaults if file missing.
+    """
+    if not TEMPLATE_PATH.exists():
+        logger.warning(f"outreach_template.md not found at {TEMPLATE_PATH} — using built-in fallback")
+        subject = "Regarding {{company_name}} bankruptcy proceedings"
+        body = (
+            "Dear {{trustee_name}},\n\n"
+            "We noticed that {{company_name}} recently entered bankruptcy proceedings. "
+            "We specialize in acquiring data assets and digital infrastructure from "
+            "companies in transition and would welcome the opportunity to discuss "
+            "whether there are assets we could help monetize for the estate.\n\n"
+            "We would be happy to arrange a brief call at your convenience.\n\n"
+            "Best regards\n\n"
+            "---\n"
+            "To unsubscribe from future messages, reply with 'UNSUBSCRIBE' in the subject line."
+        )
+        return subject, body
+
+    content = TEMPLATE_PATH.read_text(encoding="utf-8")
+
+    # Parse subject (line after "## Subject")
+    subject = ""
+    body_lines = []
+    in_subject = False
+    in_body = False
+
+    for line in content.splitlines():
+        if line.strip() == "## Subject":
+            in_subject = True
+            in_body = False
+            continue
+        if line.strip() == "## Body":
+            in_subject = False
+            in_body = True
+            continue
+        if line.startswith("## ") or line.startswith("# "):
+            in_subject = False
+            in_body = False
+            continue
+        if line.strip() == "---":
+            in_subject = False
+            if in_body:
+                body_lines.append(line)
+            continue
+        if in_subject and line.strip():
+            subject = line.strip()
+        if in_body:
+            body_lines.append(line)
+
+    body = "\n".join(body_lines).strip()
+    return subject, body
+
+
+def _render(template: str, company_name: str, trustee_name: str) -> str:
+    """Replace {{placeholders}} in a template string."""
+    return template.replace("{{company_name}}", company_name).replace("{{trustee_name}}", trustee_name)
 
 
 # ============================================================================
@@ -230,8 +279,9 @@ def stage_outreach(records) -> dict:
                 counts["skipped"] += 1
                 continue
 
-            subject = f"Regarding {r.company_name} bankruptcy proceedings"
-            body = _build_outreach_body(r.company_name, r.trustee)
+            subj_tpl, body_tpl = _load_template()
+            subject = _render(subj_tpl, r.company_name, r.trustee)
+            body = _render(body_tpl, r.company_name, r.trustee)
             log_send(conn, r.org_number, email, r.company_name, "pending",
                      subject=subject, body=body)
             counts["staged"] += 1
