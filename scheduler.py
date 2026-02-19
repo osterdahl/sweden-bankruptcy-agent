@@ -104,10 +104,13 @@ def deduplicate(records: List) -> List:
 
 
 def backfill_scores() -> int:
-    """Score all records in bankruptcy_records that have not been scored yet.
+    """Score all unscored records in bankruptcy_records.
 
-    Called from the dashboard. Respects AI_SCORING_ENABLED and ANTHROPIC_API_KEY
-    env vars — rule-based scoring always runs, AI scoring only when enabled.
+    Two-pass strategy to minimise API calls:
+    1. Rule-based scoring runs on ALL unscored records immediately.
+    2. AI scoring (Claude) runs only on HIGH/MEDIUM rule-based results,
+       since LOW records (food, retail, construction) don't need refinement.
+
     Returns the number of records scored.
     """
     conn = _get_connection()
@@ -123,7 +126,9 @@ def backfill_scores() -> int:
     if not rows:
         return 0
 
-    from bankruptcy_monitor import score_bankruptcies, BankruptcyRecord
+    from bankruptcy_monitor import score_bankruptcies, calculate_base_score, BankruptcyRecord
+    import os
+
     records = [
         BankruptcyRecord(
             company_name=row[2] or 'N/A',
@@ -143,9 +148,30 @@ def backfill_scores() -> int:
         for row in rows
     ]
 
-    scored = score_bankruptcies(records)
-    update_scores(scored)
-    return len(scored)
+    # Pass 1: rule-based on everything (fast, no API calls)
+    # Temporarily disable AI so score_bankruptcies only does rule-based
+    original = os.environ.get('AI_SCORING_ENABLED')
+    os.environ['AI_SCORING_ENABLED'] = 'false'
+    score_bankruptcies(records)
+    if original is not None:
+        os.environ['AI_SCORING_ENABLED'] = original
+    else:
+        del os.environ['AI_SCORING_ENABLED']
+
+    # Persist rule-based scores immediately so dashboard shows progress
+    update_scores(records)
+    logger.info(f"Rule-based scoring complete for {len(records)} records")
+
+    # Pass 2: AI scoring only on HIGH/MEDIUM candidates
+    ai_enabled = os.getenv('AI_SCORING_ENABLED', 'false').lower() == 'true'
+    if ai_enabled and os.getenv('ANTHROPIC_API_KEY'):
+        candidates = [r for r in records if r.priority in ('HIGH', 'MEDIUM')]
+        logger.info(f"AI scoring {len(candidates)} HIGH/MEDIUM candidates (skipping {len(records)-len(candidates)} LOW)")
+        if candidates:
+            score_bankruptcies(candidates)
+            update_scores(candidates)
+
+    return len(records)
 
 
 def update_scores(records: List) -> None:
