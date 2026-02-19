@@ -105,17 +105,6 @@ with tab_overview:
     col3.metric("Emails Sent", sent)
     col4.metric("Emails Failed/Bounced", failed)
 
-    # Scheduler status
-    if table_exists(conn, "scheduler_runs"):
-        last_run_row = conn.execute(
-            "SELECT started_at, status FROM scheduler_runs ORDER BY started_at DESC LIMIT 1"
-        ).fetchone()
-        if last_run_row:
-            st.info(f"Last scraper run: {last_run_row[0]}  —  Status: {last_run_row[1]}")
-        else:
-            st.info("No scraper runs recorded yet.")
-    else:
-        st.info("Scheduler tracking not set up yet.")
 
     # Bankruptcy records table
     st.subheader("Bankruptcy Records")
