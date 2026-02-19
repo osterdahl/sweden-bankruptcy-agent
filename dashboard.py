@@ -13,6 +13,13 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+# Load .env so AI_SCORING_ENABLED and ANTHROPIC_API_KEY are available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 DB_PATH = Path(__file__).parent / "data" / "bankruptcies.db"
 DB_URI = f"file:{DB_PATH}?mode=ro"
 
@@ -105,6 +112,19 @@ with tab_overview:
     col3.metric("Emails Sent", sent)
     col4.metric("Emails Failed/Bounced", failed)
 
+    # Score unscored records
+    if table_exists(conn, "bankruptcy_records"):
+        unscored = conn.execute(
+            "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_score IS NULL"
+        ).fetchone()[0]
+        if unscored > 0:
+            st.info(f"{unscored} records have not been scored yet.")
+            if st.button(f"Score {unscored} unscored records"):
+                from scheduler import backfill_scores
+                with st.spinner("Scoring records — this may take a moment..."):
+                    count = backfill_scores()
+                st.success(f"Scored {count} records.")
+                st.rerun()
 
     # Bankruptcy records table
     st.subheader("Bankruptcy Records")

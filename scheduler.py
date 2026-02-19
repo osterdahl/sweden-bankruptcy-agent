@@ -103,6 +103,51 @@ def deduplicate(records: List) -> List:
     return new_records
 
 
+def backfill_scores() -> int:
+    """Score all records in bankruptcy_records that have not been scored yet.
+
+    Called from the dashboard. Respects AI_SCORING_ENABLED and ANTHROPIC_API_KEY
+    env vars — rule-based scoring always runs, AI scoring only when enabled.
+    Returns the number of records scored.
+    """
+    conn = _get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT org_number, initiated_date, company_name, sni_code, industry_name, "
+            "employees, net_sales, total_assets, region "
+            "FROM bankruptcy_records WHERE ai_score IS NULL"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return 0
+
+    from bankruptcy_monitor import score_bankruptcies, BankruptcyRecord
+    records = [
+        BankruptcyRecord(
+            company_name=row[2] or 'N/A',
+            org_number=row[0],
+            initiated_date=row[1],
+            court='N/A',
+            sni_code=row[3] or 'N/A',
+            industry_name=row[4] or 'N/A',
+            trustee='N/A',
+            trustee_firm='N/A',
+            trustee_address='N/A',
+            employees=row[5] or 'N/A',
+            net_sales=row[6] or 'N/A',
+            total_assets=row[7] or 'N/A',
+            region=row[8] or 'N/A',
+        )
+        for row in rows
+    ]
+
+    scored = score_bankruptcies(records)
+    update_scores(scored)
+    return len(scored)
+
+
 def update_scores(records: List) -> None:
     """Write ai_score, ai_reason, priority, asset_types back to bankruptcy_records.
 
