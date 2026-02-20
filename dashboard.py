@@ -63,76 +63,39 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* ── Global ── */
+/* ── Global — font only, never touch the app background ── */
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 [data-testid="block-container"] { padding: 2rem 2.5rem 3rem; }
-
-/* ── Typography ── */
 h1, h2, h3 { letter-spacing: -0.02em; color: var(--text-color); }
 h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 
-/* ================================================================
-   LIGHT MODE defaults
-   ================================================================ */
-
-/* Give the page a very slight off-white tint so white cards pop */
-.stApp { background-color: #F4F6F9; }
-
+/* ── Cards
+   Uses Streamlit's --secondary-background-color which is always distinct
+   from the main background in both themes:
+     light → #F0F2F6 on white   (slightly gray card on white page)
+     dark  → #262730 on #0E1117 (lighter card on dark page)
+─────────────────────────────────────────────────────────────── */
 .kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128,128,128,0.18);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     min-height: 90px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 .email-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128,128,128,0.18);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-[data-testid="stBaseButton-secondary"] {
-    background: #FFFFFF !important;
-    border: 1px solid #D1D9E0 !important;
-}
-
-.badge-high   { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
-.badge-medium { background: #FEF9C3; color: #854D0E; border: 1px solid #FDE68A; }
-.badge-low    { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
-
-/* ================================================================
-   DARK MODE — covers both OS-level and Streamlit's own toggle
-   ================================================================ */
-
-@media (prefers-color-scheme: dark) {
-    .stApp                              { background-color: #0E1117 !important; }
-    .kpi-card, .email-card              { background: #1C2636 !important; border-color: #2D3748 !important; }
-    [data-testid="stBaseButton-secondary"] { background: #1C2636 !important; border-color: #2D3748 !important; }
-    .badge-high   { background: #450A0A; color: #FCA5A5; border-color: #7F1D1D; }
-    .badge-medium { background: #451A03; color: #FCD34D; border-color: #78350F; }
-    .badge-low    { background: #052E16; color: #86EFAC; border-color: #166534; }
-}
-
-/* Streamlit sets data-theme="dark" on <html> when its own dark toggle is on */
-[data-theme="dark"] .stApp                              { background-color: #0E1117 !important; }
-[data-theme="dark"] .kpi-card,
-[data-theme="dark"] .email-card                         { background: #1C2636 !important; border-color: #2D3748 !important; }
-[data-theme="dark"] [data-testid="stBaseButton-secondary"] { background: #1C2636 !important; border-color: #2D3748 !important; }
-[data-theme="dark"] .badge-high   { background: #450A0A; color: #FCA5A5; border-color: #7F1D1D; }
-[data-theme="dark"] .badge-medium { background: #451A03; color: #FCD34D; border-color: #78350F; }
-[data-theme="dark"] .badge-low    { background: #052E16; color: #86EFAC; border-color: #166534; }
-
-/* ================================================================
-   SHARED (theme-neutral)
-   ================================================================ */
-
+/* ── KPI text ── */
 .kpi-label {
     font-size: 0.7rem;
     font-weight: 600;
@@ -147,6 +110,7 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 .kpi-value.warning  { color: #D97706; }
 .kpi-value.danger   { color: #E53E3E; }
 
+/* ── Priority badges — light mode defaults ── */
 .badge {
     display: inline-block;
     padding: 2px 10px;
@@ -156,11 +120,22 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
+.badge-high   { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.badge-medium { background: #FEF9C3; color: #854D0E; border: 1px solid #FDE68A; }
+.badge-low    { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
 
+/* Dark badge variants (OS dark mode) */
+@media (prefers-color-scheme: dark) {
+    .badge-high   { background: #450A0A; color: #FCA5A5; border-color: #7F1D1D; }
+    .badge-medium { background: #451A03; color: #FCD34D; border-color: #78350F; }
+    .badge-low    { background: #052E16; color: #86EFAC; border-color: #166534; }
+}
+
+/* ── Asset pills ── */
 .pill {
     display: inline-block;
     background: rgba(128,128,128,0.12);
-    border: 1px solid rgba(128,128,128,0.25);
+    border: 1px solid rgba(128,128,128,0.22);
     color: var(--text-color);
     opacity: 0.75;
     padding: 1px 8px;
@@ -170,46 +145,68 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
     margin-right: 4px;
 }
 
+/* ── Outreach card internals ── */
 .email-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; flex-wrap: wrap; }
 .company-name  { font-weight: 600; font-size: 1rem; color: var(--text-color); }
 .score-chip    { font-size: 0.72rem; font-weight: 600; color: var(--text-color); opacity: 0.55;
                  background: rgba(128,128,128,0.1); border: 1px solid rgba(128,128,128,0.2);
                  border-radius: 6px; padding: 2px 8px; }
-.ai-reason     { font-size: 0.82rem; color: var(--text-color); opacity: 0.6; line-height: 1.5; margin: 6px 0 10px; }
+.ai-reason     { font-size: 0.82rem; color: var(--text-color); opacity: 0.6;
+                 line-height: 1.5; margin: 6px 0 10px; }
 .email-to      { font-size: 0.8rem; color: var(--text-color); opacity: 0.45; margin-bottom: 10px; }
 .email-to span { opacity: 1; font-weight: 500; }
 
+/* ── Status text ── */
 .status-ok      { color: #059669; font-size: 0.82rem; font-weight: 500; }
 .status-warn    { color: #D97706; font-size: 0.82rem; font-weight: 500; }
 .status-error   { color: #E53E3E; font-size: 0.82rem; font-weight: 500; }
 .status-neutral { color: var(--text-color); opacity: 0.4; font-size: 0.82rem; }
 
+/* ── Section headers ── */
 .section-header {
     font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
     letter-spacing: 0.08em; color: var(--text-color); opacity: 0.4;
-    padding-bottom: 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.2); margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.18); margin-bottom: 1rem;
 }
 
 /* ── Tabs ── */
-.stTabs [data-baseweb="tab-list"] { gap: 0; border-bottom: 1px solid rgba(128,128,128,0.2); background: transparent; padding: 0; }
-.stTabs [data-baseweb="tab"] { padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 500;
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0; border-bottom: 1px solid rgba(128,128,128,0.2);
+    background: transparent; padding: 0;
+}
+.stTabs [data-baseweb="tab"] {
+    padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 500;
     color: var(--text-color); opacity: 0.5; background: transparent;
-    border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.stTabs [aria-selected="true"] { color: var(--text-color) !important; opacity: 1 !important;
-    border-bottom: 2px solid var(--text-color) !important; background: transparent !important; }
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.stTabs [aria-selected="true"] {
+    color: var(--text-color) !important; opacity: 1 !important;
+    border-bottom: 2px solid var(--text-color) !important; background: transparent !important;
+}
 .stTabs [data-baseweb="tab-panel"] { padding-top: 1.5rem; }
 
-/* ── Buttons ── */
-.stButton > button { border-radius: 8px !important; font-size: 0.875rem !important;
-    font-weight: 500 !important; transition: all 0.15s ease !important; }
-.stButton > button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
+/* ── Buttons — shape/font only, let Streamlit own the colours ── */
+.stButton > button {
+    border-radius: 8px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+}
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
 
 /* ── Inputs ── */
 .stTextInput input, .stTextArea textarea {
-    border-radius: 8px !important; border: 1px solid rgba(128,128,128,0.25) !important;
-    font-size: 0.875rem !important; font-family: 'Inter', sans-serif !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(128,128,128,0.25) !important;
+    font-size: 0.875rem !important;
+    font-family: 'Inter', sans-serif !important;
 }
-.stTextInput input:focus, .stTextArea textarea:focus { box-shadow: 0 0 0 3px rgba(128,128,128,0.15) !important; }
+.stTextInput input:focus, .stTextArea textarea:focus {
+    box-shadow: 0 0 0 3px rgba(128,128,128,0.15) !important;
+}
 
 hr { border-color: rgba(128,128,128,0.2) !important; margin: 1.5rem 0 !important; }
 [data-testid="stAlert"] { border-radius: 10px !important; font-size: 0.875rem !important; }
