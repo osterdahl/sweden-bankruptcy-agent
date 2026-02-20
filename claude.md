@@ -2,6 +2,7 @@
 
 ## Philosophy
 **Radical simplicity.** One Python file, one dependency, complete data, zero CAPTCHA, zero complexity.
+**strict code reviews** once you are finished, always summon a panel of experts to review code you have written and take action to fix bugs, simplify and delete dead code before considering a task to be finished. 
 
 ## Architecture
 - **Single file**: `bankruptcy_monitor.py` (524 lines)

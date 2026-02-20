@@ -14,19 +14,14 @@ Regarding {{company_name}} bankruptcy proceedings
 
 ## Body
 
-Dear {{trustee_name}},
+Hej, 
 
-We noticed that {{company_name}} recently entered bankruptcy proceedings.
+Jag såg i POIT att du sköter konkursen för {{company_name}}, och jag är nyfiken på hur processen går kring deras tillgångar? Finns det en lista på sådant som ev kan köpas ut direkt eller via auktion och hur ser tidslinjen ut? 
 
-Redpine specializes in acquiring data assets from companies in transition — including source code, media rights, engineering drawings, sensor data, and research datasets — and licensing them to AI developers and model builders.
+Jag är mest intresserad av att köpa immatriella tillgångar, om det hjälper.
 
-If the estate holds any digital assets of this nature, we would welcome a brief conversation about whether there is an opportunity to generate value for creditors.
 
-Happy to work around your schedule.
-
-Best regards,
+Mvh
 David Österdahl
-Redpine
+RedpineAI
 
----
-*To unsubscribe from future messages, reply with 'UNSUBSCRIBE' in the subject line.*
