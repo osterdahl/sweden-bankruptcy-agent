@@ -63,28 +63,97 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* ── Global ── */
-html, body, [class*="css"], .stApp {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+/* ── Colour tokens — light ── */
+:root {
+    --bg-app:      #F8FAFC;
+    --bg-surface:  #FFFFFF;
+    --bg-subtle:   #F1F5F9;
+    --border:      #E2E8F0;
+    --text-1:      #0F172A;
+    --text-2:      #334155;
+    --text-3:      #64748B;
+    --text-4:      #94A3B8;
+
+    --badge-high-bg:     #FEE2E2;
+    --badge-high-text:   #991B1B;
+    --badge-high-border: #FECACA;
+    --badge-med-bg:      #FEF9C3;
+    --badge-med-text:    #854D0E;
+    --badge-med-border:  #FDE68A;
+    --badge-low-bg:      #F0FDF4;
+    --badge-low-text:    #166534;
+    --badge-low-border:  #BBF7D0;
+
+    --pill-bg:    #F1F5F9;
+    --pill-border:#E2E8F0;
+    --pill-text:  #475569;
+
+    --status-ok:   #059669;
+    --status-warn: #D97706;
+    --status-err:  #DC2626;
+
+    --tab-active:  #0F172A;
+    --btn-primary-bg:    #0F172A;
+    --btn-primary-text:  #FFFFFF;
+    --btn-secondary-bg:  #FFFFFF;
+    --btn-secondary-border: #E2E8F0;
+    --btn-secondary-text:   #334155;
 }
-.stApp {
-    background-color: #F8FAFC;
+
+/* ── Colour tokens — dark ── */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-app:      #0E1117;
+        --bg-surface:  #1A1F2E;
+        --bg-subtle:   #1E293B;
+        --border:      #2D3748;
+        --text-1:      #F1F5F9;
+        --text-2:      #CBD5E1;
+        --text-3:      #94A3B8;
+        --text-4:      #475569;
+
+        --badge-high-bg:     #450A0A;
+        --badge-high-text:   #FCA5A5;
+        --badge-high-border: #7F1D1D;
+        --badge-med-bg:      #451A03;
+        --badge-med-text:    #FCD34D;
+        --badge-med-border:  #78350F;
+        --badge-low-bg:      #052E16;
+        --badge-low-text:    #86EFAC;
+        --badge-low-border:  #166534;
+
+        --pill-bg:    #1E293B;
+        --pill-border:#334155;
+        --pill-text:  #94A3B8;
+
+        --tab-active:  #F1F5F9;
+        --btn-primary-bg:    #F1F5F9;
+        --btn-primary-text:  #0F172A;
+        --btn-secondary-bg:  #1E293B;
+        --btn-secondary-border: #2D3748;
+        --btn-secondary-text:   #CBD5E1;
+    }
+}
+
+/* ── Global ── */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 [data-testid="block-container"] {
     padding: 2rem 2.5rem 3rem;
 }
 
 /* ── Typography ── */
-h1, h2, h3 { letter-spacing: -0.02em; color: #0F172A; }
+h1, h2, h3 { letter-spacing: -0.02em; color: var(--text-1); }
 h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 h2 { font-weight: 600; font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
 h3 { font-weight: 600; font-size: 1rem; }
-p, li, span { color: #334155; }
+p, li { color: var(--text-2); }
 
 /* ── KPI cards ── */
 .kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     min-height: 90px;
@@ -94,18 +163,18 @@ p, li, span { color: #334155; }
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #94A3B8;
+    color: var(--text-4);
     margin-bottom: 0.5rem;
 }
 .kpi-value {
     font-size: 2rem;
     font-weight: 700;
-    color: #0F172A;
+    color: var(--text-1);
     line-height: 1;
 }
-.kpi-value.positive { color: #059669; }
-.kpi-value.warning  { color: #D97706; }
-.kpi-value.danger   { color: #DC2626; }
+.kpi-value.positive { color: var(--status-ok); }
+.kpi-value.warning  { color: var(--status-warn); }
+.kpi-value.danger   { color: var(--status-err); }
 
 /* ── Priority badges ── */
 .badge {
@@ -117,16 +186,16 @@ p, li, span { color: #334155; }
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
-.badge-high   { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
-.badge-medium { background: #FEF9C3; color: #854D0E; border: 1px solid #FDE68A; }
-.badge-low    { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+.badge-high   { background: var(--badge-high-bg);   color: var(--badge-high-text);   border: 1px solid var(--badge-high-border); }
+.badge-medium { background: var(--badge-med-bg);    color: var(--badge-med-text);    border: 1px solid var(--badge-med-border); }
+.badge-low    { background: var(--badge-low-bg);    color: var(--badge-low-text);    border: 1px solid var(--badge-low-border); }
 
 /* ── Asset type pills ── */
 .pill {
     display: inline-block;
-    background: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    color: #475569;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    color: var(--pill-text);
     padding: 1px 8px;
     border-radius: 6px;
     font-size: 0.72rem;
@@ -136,8 +205,8 @@ p, li, span { color: #334155; }
 
 /* ── Outreach card ── */
 .email-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1rem;
@@ -152,40 +221,52 @@ p, li, span { color: #334155; }
 .company-name {
     font-weight: 600;
     font-size: 1rem;
-    color: #0F172A;
+    color: var(--text-1);
 }
 .score-chip {
     font-size: 0.72rem;
     font-weight: 600;
-    color: #64748B;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
+    color: var(--text-3);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: 2px 8px;
 }
 .ai-reason {
     font-size: 0.82rem;
-    color: #64748B;
+    color: var(--text-3);
     line-height: 1.5;
     margin: 6px 0 10px;
 }
 .email-to {
     font-size: 0.8rem;
-    color: #94A3B8;
+    color: var(--text-4);
     margin-bottom: 10px;
 }
-.email-to span { color: #475569; font-weight: 500; }
+.email-to span { color: var(--text-3); font-weight: 500; }
 
-/* ── Status indicator ── */
-.status-ok      { color: #059669; font-size: 0.82rem; font-weight: 500; }
-.status-warn    { color: #D97706; font-size: 0.82rem; font-weight: 500; }
-.status-error   { color: #DC2626; font-size: 0.82rem; font-weight: 500; }
-.status-neutral { color: #94A3B8; font-size: 0.82rem; }
+/* ── Status indicators ── */
+.status-ok      { color: var(--status-ok);   font-size: 0.82rem; font-weight: 500; }
+.status-warn    { color: var(--status-warn); font-size: 0.82rem; font-weight: 500; }
+.status-error   { color: var(--status-err);  font-size: 0.82rem; font-weight: 500; }
+.status-neutral { color: var(--text-4);      font-size: 0.82rem; }
+
+/* ── Section headers ── */
+.section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-4);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+}
 
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
     gap: 0;
-    border-bottom: 1px solid #E2E8F0;
+    border-bottom: 1px solid var(--border);
     background: transparent;
     padding: 0;
 }
@@ -193,14 +274,14 @@ p, li, span { color: #334155; }
     padding: 0.75rem 1.25rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #64748B;
+    color: var(--text-3);
     background: transparent;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
 }
 .stTabs [aria-selected="true"] {
-    color: #0F172A !important;
-    border-bottom: 2px solid #0F172A !important;
+    color: var(--tab-active) !important;
+    border-bottom: 2px solid var(--tab-active) !important;
     background: transparent !important;
 }
 .stTabs [data-baseweb="tab-panel"] { padding-top: 1.5rem; }
@@ -213,52 +294,42 @@ p, li, span { color: #334155; }
     transition: all 0.15s ease;
 }
 [data-testid="stBaseButton-primary"] {
-    background: #0F172A !important;
+    background: var(--btn-primary-bg) !important;
     border: none !important;
-    color: white !important;
+    color: var(--btn-primary-text) !important;
 }
 [data-testid="stBaseButton-primary"]:hover {
-    background: #1E293B !important;
+    opacity: 0.9 !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15,23,42,0.2) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
 }
 [data-testid="stBaseButton-secondary"] {
-    border: 1px solid #E2E8F0 !important;
-    background: white !important;
-    color: #334155 !important;
+    border: 1px solid var(--btn-secondary-border) !important;
+    background: var(--btn-secondary-bg) !important;
+    color: var(--btn-secondary-text) !important;
 }
 
 /* ── Inputs / textareas ── */
 .stTextInput input, .stTextArea textarea {
     border-radius: 8px !important;
-    border: 1px solid #E2E8F0 !important;
+    border: 1px solid var(--border) !important;
     font-size: 0.875rem !important;
     font-family: 'Inter', sans-serif !important;
+    color: var(--text-1) !important;
+    background: var(--bg-surface) !important;
 }
 .stTextInput input:focus, .stTextArea textarea:focus {
-    border-color: #94A3B8 !important;
+    border-color: var(--text-4) !important;
     box-shadow: 0 0 0 3px rgba(148,163,184,0.15) !important;
 }
 
 /* ── Dividers ── */
-hr { border-color: #E2E8F0 !important; margin: 1.5rem 0 !important; }
+hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
 
-/* ── Info / warning banners ── */
+/* ── Alerts ── */
 [data-testid="stAlert"] {
     border-radius: 10px !important;
     font-size: 0.875rem !important;
-}
-
-/* ── Section headers ── */
-.section-header {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #94A3B8;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #F1F5F9;
-    margin-bottom: 1rem;
 }
 </style>
 """, unsafe_allow_html=True)
