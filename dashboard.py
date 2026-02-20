@@ -320,6 +320,21 @@ with tab_overview:
                 st.success(f"Scored {count} records.")
                 st.rerun()
 
+        no_email = conn.execute(
+            "SELECT COUNT(*) FROM bankruptcy_records WHERE trustee_email = '' AND trustee <> 'N/A'"
+        ).fetchone()[0]
+        if no_email > 0:
+            if os.getenv("BRAVE_API_KEY"):
+                st.info(f"{no_email} records are missing trustee emails.")
+                if st.button(f"Look up emails for {no_email} records"):
+                    from scheduler import backfill_emails
+                    with st.spinner("Looking up emails via Brave Search — this may take several minutes..."):
+                        count = backfill_emails()
+                    st.success(f"Found emails for {count} records.")
+                    st.rerun()
+            else:
+                st.markdown('<p class="status-neutral">Set BRAVE_API_KEY to enable trustee email lookup.</p>', unsafe_allow_html=True)
+
     # ── Bankruptcy records table ──
     st.markdown('<div class="section-header">Bankruptcy Records</div>', unsafe_allow_html=True)
 
@@ -329,38 +344,73 @@ with tab_overview:
                    sni_code, employees, net_sales, total_assets,
                    trustee, trustee_firm,
                    priority, ai_score, asset_types, ai_reason,
-                   org_number
+                   org_number, trustee_email
             FROM bankruptcy_records
             ORDER BY initiated_date DESC
         """)
         if df.empty:
             st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No records yet.</p>', unsafe_allow_html=True)
         else:
+            df["_stage"] = False
             row_height = 35
             table_height = min(len(df) * row_height + 60, 700)
-            st.dataframe(
+            edited_df = st.data_editor(
                 df,
                 use_container_width=True,
                 hide_index=True,
                 height=table_height,
+                column_order=[
+                    "_stage", "company_name", "initiated_date", "region", "industry_name",
+                    "sni_code", "employees", "net_sales", "total_assets", "trustee",
+                    "trustee_firm", "priority", "ai_score", "asset_types", "ai_reason", "org_number",
+                ],
                 column_config={
-                    "company_name":   st.column_config.TextColumn("Company"),
-                    "initiated_date": st.column_config.TextColumn("Date"),
-                    "region":         st.column_config.TextColumn("Region"),
-                    "industry_name":  st.column_config.TextColumn("Industry"),
-                    "sni_code":       st.column_config.TextColumn("SNI"),
-                    "employees":      st.column_config.TextColumn("Employees"),
-                    "net_sales":      st.column_config.TextColumn("Net Sales"),
-                    "total_assets":   st.column_config.TextColumn("Assets"),
-                    "trustee":        st.column_config.TextColumn("Trustee"),
-                    "trustee_firm":   st.column_config.TextColumn("Firm"),
-                    "priority":       st.column_config.TextColumn("Priority"),
-                    "ai_score":       st.column_config.NumberColumn("Score", format="%d / 10"),
-                    "asset_types":    st.column_config.TextColumn("Asset Types"),
-                    "ai_reason":      st.column_config.TextColumn("AI Reason", width="large"),
-                    "org_number":     st.column_config.TextColumn("Org №"),
+                    "_stage":         st.column_config.CheckboxColumn("Stage", default=False),
+                    "company_name":   st.column_config.TextColumn("Company", disabled=True),
+                    "initiated_date": st.column_config.TextColumn("Date", disabled=True),
+                    "region":         st.column_config.TextColumn("Region", disabled=True),
+                    "industry_name":  st.column_config.TextColumn("Industry", disabled=True),
+                    "sni_code":       st.column_config.TextColumn("SNI", disabled=True),
+                    "employees":      st.column_config.TextColumn("Employees", disabled=True),
+                    "net_sales":      st.column_config.TextColumn("Net Sales", disabled=True),
+                    "total_assets":   st.column_config.TextColumn("Assets", disabled=True),
+                    "trustee":        st.column_config.TextColumn("Trustee", disabled=True),
+                    "trustee_firm":   st.column_config.TextColumn("Firm", disabled=True),
+                    "priority":       st.column_config.TextColumn("Priority", disabled=True),
+                    "ai_score":       st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
+                    "asset_types":    st.column_config.TextColumn("Asset Types", disabled=True),
+                    "ai_reason":      st.column_config.TextColumn("AI Reason", width="large", disabled=True),
+                    "org_number":     st.column_config.TextColumn("Org №", disabled=True),
                 },
             )
+            staged_rows = edited_df[edited_df["_stage"] == True]  # noqa: E712
+            if len(staged_rows) > 0:
+                if st.button(f"Stage {len(staged_rows)} selected for outreach", type="primary"):
+                    from outreach import stage_records_direct
+                    records = staged_rows.fillna("").to_dict("records")
+                    result = stage_records_direct(records)
+                    if result["staged"] > 0:
+                        parts = [f"{result['staged']} staged"]
+                        if result["skipped"]:
+                            parts.append(f"{result['skipped']} already contacted")
+                        if result["opted_out"]:
+                            parts.append(f"{result['opted_out']} opted out")
+                        if result["no_email"]:
+                            parts.append(f"{result['no_email']} skipped (no trustee email)")
+                        st.success(" · ".join(parts))
+                        st.rerun()
+                    else:
+                        reasons = []
+                        if result["skipped"]:
+                            reasons.append(f"{result['skipped']} already in outreach queue")
+                        if result["opted_out"]:
+                            reasons.append(f"{result['opted_out']} opted out")
+                        if result["no_email"]:
+                            reasons.append(
+                                f"{result['no_email']} have no trustee email "
+                                "(set BRAVE_API_KEY to enable automatic lookup)"
+                            )
+                        st.warning("Nothing staged — " + " · ".join(reasons) if reasons else "Nothing staged.")
     else:
         st.markdown('<p style="color:#94A3B8;">Table not found yet.</p>', unsafe_allow_html=True)
 

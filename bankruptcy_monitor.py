@@ -309,7 +309,7 @@ def lookup_trustee_emails(records: List[BankruptcyRecord]) -> List[BankruptcyRec
     Enabled by LOOKUP_TRUSTEE_EMAIL=true environment variable.
     Requires BRAVE_API_KEY environment variable.
     """
-    if os.getenv('LOOKUP_TRUSTEE_EMAIL', 'false').lower() != 'true':
+    if os.getenv('LOOKUP_TRUSTEE_EMAIL', 'true').lower() != 'true':
         return records
 
     if not os.getenv('BRAVE_API_KEY'):

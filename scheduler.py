@@ -196,6 +196,62 @@ def update_scores(records: List) -> None:
         conn.close()
 
 
+def backfill_emails() -> int:
+    """Look up trustee emails for all records currently missing one.
+
+    Deduplicates by trustee/firm pair — each unique pair is looked up once.
+    Updates bankruptcy_records in-place via UPDATE OR IGNORE.
+
+    Returns the number of records updated with a found email.
+    """
+    conn = _get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT org_number, initiated_date, trustee, trustee_firm "
+            "FROM bankruptcy_records WHERE trustee_email = '' AND trustee <> 'N/A'"
+        ).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return 0
+
+    from bankruptcy_monitor import lookup_trustee_emails, BankruptcyRecord
+
+    records = [
+        BankruptcyRecord(
+            org_number=row[0],
+            initiated_date=row[1],
+            company_name='N/A', court='N/A', sni_code='N/A', industry_name='N/A',
+            trustee=row[2] or 'N/A',
+            trustee_firm=row[3] or 'N/A',
+            trustee_address='N/A', employees='N/A', net_sales='N/A',
+            total_assets='N/A', region='N/A',
+        )
+        for row in rows
+    ]
+
+    records = lookup_trustee_emails(records)
+
+    found = 0
+    conn = _get_connection()
+    try:
+        for r in records:
+            if r.trustee_email:
+                cursor = conn.execute(
+                    "UPDATE OR IGNORE bankruptcy_records SET trustee_email = ? "
+                    "WHERE org_number = ? AND initiated_date = ? AND trustee_email = ''",
+                    (r.trustee_email, r.org_number, r.initiated_date),
+                )
+                found += cursor.rowcount
+        conn.commit()
+    finally:
+        conn.close()
+
+    logger.info(f"Email backfill complete: {found} records updated")
+    return found
+
+
 def get_cached_keys() -> set:
     """Return set of (org_number, initiated_date) for all records in the DB.
 

@@ -265,9 +265,11 @@ def stage_outreach(records) -> dict:
     eligible = [r for r in records if r.trustee_email and r.trustee != "N/A"]
     logger.info(f"Outreach staging: {len(eligible)} records with trustee emails (of {len(records)} total)")
 
+    subj_tpl, body_tpl = _load_template()
+
     try:
         for r in eligible:
-            email = r.trustee_email
+            email = r.trustee_email.lower()
 
             if is_opted_out(conn, email):
                 logger.debug(f"  Skipping {email} (opted out)")
@@ -279,7 +281,6 @@ def stage_outreach(records) -> dict:
                 counts["skipped"] += 1
                 continue
 
-            subj_tpl, body_tpl = _load_template()
             subject = _render(subj_tpl, r.company_name, r.trustee)
             body = _render(body_tpl, r.company_name, r.trustee)
             log_send(conn, r.org_number, email, r.company_name, "pending",
@@ -293,6 +294,57 @@ def stage_outreach(records) -> dict:
     finally:
         conn.close()
 
+    return counts
+
+
+# ============================================================================
+# DIRECT STAGING (called by dashboard for manual selection)
+# ============================================================================
+
+def stage_records_direct(records: list) -> dict:
+    """Stage specific records for outreach, bypassing priority filters.
+
+    Does not gate on MAILGUN_OUTREACH_ENABLED — this is a manual user action.
+    Each record must be a dict with: org_number, company_name, trustee, trustee_email.
+
+    Returns:
+        Summary dict: {'staged': N, 'skipped': N, 'opted_out': N, 'no_email': N}.
+    """
+    conn = _get_db()
+    counts = {"staged": 0, "skipped": 0, "opted_out": 0, "no_email": 0}
+    subj_tpl, body_tpl = _load_template()
+
+    try:
+        for r in records:
+            email = str(r.get("trustee_email") or "").strip().lower()
+            if not email:
+                counts["no_email"] += 1
+                continue
+
+            org_number = r.get("org_number", "")
+            company_name = r.get("company_name", "")
+            trustee = r.get("trustee", "")
+
+            if is_opted_out(conn, email):
+                counts["opted_out"] += 1
+                continue
+
+            if already_contacted(conn, org_number, email):
+                counts["skipped"] += 1
+                continue
+
+            subject = _render(subj_tpl, company_name, trustee)
+            body = _render(body_tpl, company_name, trustee)
+            log_send(conn, org_number, email, company_name, "pending",
+                     subject=subject, body=body)
+            counts["staged"] += 1
+    finally:
+        conn.close()
+
+    logger.info(
+        f"Direct staging complete: {counts['staged']} staged, {counts['skipped']} skipped, "
+        f"{counts['opted_out']} opted-out, {counts['no_email']} no-email"
+    )
     return counts
 
 

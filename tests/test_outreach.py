@@ -201,6 +201,62 @@ def test_send_approved_skips_pending(tmp_db, monkeypatch):
     assert result["dry_run"] == 0
 
 
+# ============================================================================
+# stage_records_direct tests
+# ============================================================================
+
+def test_stage_direct_bypasses_enabled_gate(tmp_db):
+    """stage_records_direct works even without MAILGUN_OUTREACH_ENABLED."""
+    from outreach import stage_records_direct
+
+    env = {k: v for k, v in os.environ.items() if not k.startswith("MAILGUN")}
+    with patch.dict(os.environ, env, clear=True):
+        result = stage_records_direct([
+            {"org_number": "556677-8899", "company_name": "Test AB",
+             "trustee": "Anna Svensson", "trustee_email": "anna@lawfirm.se"}
+        ])
+    assert result["staged"] == 1
+
+
+def test_stage_direct_dedup(tmp_db):
+    """stage_records_direct skips already-contacted records."""
+    from outreach import stage_records_direct
+
+    record = {"org_number": "556677-8899", "company_name": "Test AB",
+              "trustee": "Anna Svensson", "trustee_email": "anna@lawfirm.se"}
+    result1 = stage_records_direct([record])
+    assert result1["staged"] == 1
+
+    result2 = stage_records_direct([record])
+    assert result2["skipped"] == 1
+    assert result2["staged"] == 0
+
+
+def test_stage_direct_no_email_skipped(tmp_db):
+    """stage_records_direct counts records without trustee_email."""
+    from outreach import stage_records_direct
+
+    result = stage_records_direct([
+        {"org_number": "556677-8899", "company_name": "Test AB",
+         "trustee": "Anna Svensson", "trustee_email": None}
+    ])
+    assert result["no_email"] == 1
+    assert result["staged"] == 0
+
+
+def test_stage_direct_opted_out(tmp_db):
+    """stage_records_direct skips opted-out emails."""
+    from outreach import stage_records_direct, add_opt_out
+
+    add_opt_out("anna@lawfirm.se")
+    result = stage_records_direct([
+        {"org_number": "556677-8899", "company_name": "Test AB",
+         "trustee": "Anna Svensson", "trustee_email": "anna@lawfirm.se"}
+    ])
+    assert result["opted_out"] == 1
+    assert result["staged"] == 0
+
+
 def test_send_approved_rechecks_optout(tmp_db, monkeypatch):
     """send_approved_emails rejects rows if trustee opted out after approval."""
     from outreach import stage_outreach, send_approved_emails, add_opt_out, _get_db
