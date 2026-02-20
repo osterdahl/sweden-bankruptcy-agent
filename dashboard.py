@@ -7,6 +7,7 @@ Read-only for analytics; read-write only for outreach_log approval actions.
 Run: streamlit run dashboard.py
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -54,13 +55,246 @@ def query_df(conn, sql: str) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Page config
+# Page config & global styles
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Bankruptcy Monitor", layout="wide")
-st.title("Swedish Bankruptcy Monitor")
+st.set_page_config(page_title="Bankruptcy Monitor", layout="wide", page_icon="📊")
 
-if st.button("Refresh"):
-    st.rerun()
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Global ── */
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.stApp {
+    background-color: #F8FAFC;
+}
+[data-testid="block-container"] {
+    padding: 2rem 2.5rem 3rem;
+}
+
+/* ── Typography ── */
+h1, h2, h3 { letter-spacing: -0.02em; color: #0F172A; }
+h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
+h2 { font-weight: 600; font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+h3 { font-weight: 600; font-size: 1rem; }
+p, li, span { color: #334155; }
+
+/* ── KPI cards ── */
+.kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    min-height: 90px;
+}
+.kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94A3B8;
+    margin-bottom: 0.5rem;
+}
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1;
+}
+.kpi-value.positive { color: #059669; }
+.kpi-value.warning  { color: #D97706; }
+.kpi-value.danger   { color: #DC2626; }
+
+/* ── Priority badges ── */
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.badge-high   { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.badge-medium { background: #FEF9C3; color: #854D0E; border: 1px solid #FDE68A; }
+.badge-low    { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+
+/* ── Asset type pills ── */
+.pill {
+    display: inline-block;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    color: #475569;
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+/* ── Outreach card ── */
+.email-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+}
+.email-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+.company-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #0F172A;
+}
+.score-chip {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748B;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+.ai-reason {
+    font-size: 0.82rem;
+    color: #64748B;
+    line-height: 1.5;
+    margin: 6px 0 10px;
+}
+.email-to {
+    font-size: 0.8rem;
+    color: #94A3B8;
+    margin-bottom: 10px;
+}
+.email-to span { color: #475569; font-weight: 500; }
+
+/* ── Status indicator ── */
+.status-ok      { color: #059669; font-size: 0.82rem; font-weight: 500; }
+.status-warn    { color: #D97706; font-size: 0.82rem; font-weight: 500; }
+.status-error   { color: #DC2626; font-size: 0.82rem; font-weight: 500; }
+.status-neutral { color: #94A3B8; font-size: 0.82rem; }
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0;
+    border-bottom: 1px solid #E2E8F0;
+    background: transparent;
+    padding: 0;
+}
+.stTabs [data-baseweb="tab"] {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748B;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+.stTabs [aria-selected="true"] {
+    color: #0F172A !important;
+    border-bottom: 2px solid #0F172A !important;
+    background: transparent !important;
+}
+.stTabs [data-baseweb="tab-panel"] { padding-top: 1.5rem; }
+
+/* ── Buttons ── */
+.stButton > button {
+    border-radius: 8px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease;
+}
+[data-testid="stBaseButton-primary"] {
+    background: #0F172A !important;
+    border: none !important;
+    color: white !important;
+}
+[data-testid="stBaseButton-primary"]:hover {
+    background: #1E293B !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15,23,42,0.2) !important;
+}
+[data-testid="stBaseButton-secondary"] {
+    border: 1px solid #E2E8F0 !important;
+    background: white !important;
+    color: #334155 !important;
+}
+
+/* ── Inputs / textareas ── */
+.stTextInput input, .stTextArea textarea {
+    border-radius: 8px !important;
+    border: 1px solid #E2E8F0 !important;
+    font-size: 0.875rem !important;
+    font-family: 'Inter', sans-serif !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #94A3B8 !important;
+    box-shadow: 0 0 0 3px rgba(148,163,184,0.15) !important;
+}
+
+/* ── Dividers ── */
+hr { border-color: #E2E8F0 !important; margin: 1.5rem 0 !important; }
+
+/* ── Info / warning banners ── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    font-size: 0.875rem !important;
+}
+
+/* ── Section headers ── */
+.section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94A3B8;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: 1rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+def kpi(label, value, variant=""):
+    cls = f"kpi-value {variant}".strip()
+    return f"""
+    <div class="kpi-card">
+        <div class="kpi-label">{label}</div>
+        <div class="{cls}">{value:,}</div>
+    </div>"""
+
+
+def badge(priority):
+    cls = {"HIGH": "badge-high", "MEDIUM": "badge-medium", "LOW": "badge-low"}.get(priority, "")
+    return f'<span class="badge {cls}">{priority or "—"}</span>' if priority else ""
+
+
+def pills(asset_types):
+    if not asset_types:
+        return ""
+    return "".join(f'<span class="pill">{t.strip()}</span>' for t in asset_types.split(","))
+
+
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
+col_title, col_refresh = st.columns([8, 1])
+with col_title:
+    st.markdown("<h1>Bankruptcy Monitor</h1>", unsafe_allow_html=True)
+with col_refresh:
+    st.markdown("<div style='padding-top:0.6rem'>", unsafe_allow_html=True)
+    if st.button("↻ Refresh"):
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 conn = get_connection()
 
@@ -74,49 +308,43 @@ if conn is None:
 tab_overview, tab_queue = st.tabs(["Overview", "Outreach Queue"])
 
 # ---------------------------------------------------------------------------
-# TAB 1: Overview (read-only)
+# TAB 1: Overview
 # ---------------------------------------------------------------------------
 with tab_overview:
-    # KPI cards
-    col1, col2, col3, col4 = st.columns(4)
+
+    # ── KPI row ──
+    total_filings, duplicates, sent, failed, high_count, med_count = 0, 0, 0, 0, 0, 0
 
     if table_exists(conn, "bankruptcy_records"):
         total_filings = conn.execute("SELECT COUNT(*) FROM bankruptcy_records").fetchone()[0]
-        duplicates = 0
         dup_row = conn.execute(
             "SELECT COUNT(*) FROM ("
             "  SELECT org_number, initiated_date FROM bankruptcy_records"
             "  GROUP BY org_number, initiated_date HAVING COUNT(*) > 1"
             ")"
         ).fetchone()
-        if dup_row:
-            duplicates = dup_row[0]
-    else:
-        total_filings = 0
-        duplicates = 0
-
-    col1.metric("Total Filings", total_filings)
-    col2.metric("Duplicate Records", duplicates)
+        duplicates = dup_row[0] if dup_row else 0
+        high_count = conn.execute("SELECT COUNT(*) FROM bankruptcy_records WHERE priority='HIGH'").fetchone()[0]
+        med_count  = conn.execute("SELECT COUNT(*) FROM bankruptcy_records WHERE priority='MEDIUM'").fetchone()[0]
 
     if table_exists(conn, "outreach_log"):
-        sent = conn.execute(
-            "SELECT COUNT(*) FROM outreach_log WHERE status='sent'"
-        ).fetchone()[0]
-        failed = conn.execute(
-            "SELECT COUNT(*) FROM outreach_log WHERE status IN ('failed','bounced')"
-        ).fetchone()[0]
-    else:
-        sent = 0
-        failed = 0
+        sent   = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE status='sent'").fetchone()[0]
+        failed = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE status IN ('failed','bounced')").fetchone()[0]
 
-    col3.metric("Emails Sent", sent)
-    col4.metric("Emails Failed/Bounced", failed)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.markdown(kpi("Total Filings", total_filings), unsafe_allow_html=True)
+    c2.markdown(kpi("High Priority", high_count, "danger" if high_count else ""), unsafe_allow_html=True)
+    c3.markdown(kpi("Medium Priority", med_count, "warning" if med_count else ""), unsafe_allow_html=True)
+    c4.markdown(kpi("Emails Sent", sent, "positive" if sent else ""), unsafe_allow_html=True)
+    c5.markdown(kpi("Failed / Bounced", failed, "danger" if failed else ""), unsafe_allow_html=True)
+    c6.markdown(kpi("Duplicate Records", duplicates), unsafe_allow_html=True)
 
-    # Scoring status + backfill button
+    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+
+    # ── AI scoring status ──
     if table_exists(conn, "bankruptcy_records"):
-        import os
-        ai_enabled = os.getenv("AI_SCORING_ENABLED", "false").lower() == "true"
-        has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+        ai_enabled      = os.getenv("AI_SCORING_ENABLED", "false").lower() == "true"
+        has_key         = bool(os.getenv("ANTHROPIC_API_KEY"))
         ai_failed_count = conn.execute(
             "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_reason LIKE '[AI failed%'"
         ).fetchone()[0]
@@ -125,13 +353,13 @@ with tab_overview:
         ).fetchone()[0]
 
         if not ai_enabled:
-            st.caption("ℹ️ AI scoring disabled — set AI_SCORING_ENABLED=true in .env to enable.")
+            st.markdown('<p class="status-neutral">AI scoring disabled — set AI_SCORING_ENABLED=true in .env to enable.</p>', unsafe_allow_html=True)
         elif not has_key:
-            st.warning("⚠️ AI_SCORING_ENABLED=true but ANTHROPIC_API_KEY is not set. Scores are rule-based only.")
+            st.warning("AI_SCORING_ENABLED=true but ANTHROPIC_API_KEY is not set. Scores are rule-based only.")
         elif ai_failed_count > 0:
-            st.warning(f"⚠️ AI scoring failed for {ai_failed_count} records (API error). Check logs and ANTHROPIC_API_KEY.")
+            st.markdown(f'<p class="status-warn">⚠ AI scoring failed for {ai_failed_count} records — check ANTHROPIC_API_KEY and logs.</p>', unsafe_allow_html=True)
         else:
-            st.caption("✓ AI scoring active.")
+            st.markdown('<p class="status-ok">✓ AI scoring active</p>', unsafe_allow_html=True)
 
         if unscored > 0:
             st.info(f"{unscored} records have not been scored yet.")
@@ -142,43 +370,94 @@ with tab_overview:
                 st.success(f"Scored {count} records.")
                 st.rerun()
 
-    # Bankruptcy records table
-    st.subheader("Bankruptcy Records")
-    if table_exists(conn, "bankruptcy_records"):
-        df = query_df(conn, "SELECT * FROM bankruptcy_records ORDER BY initiated_date DESC")
-        if df.empty:
-            st.write("No records yet.")
-        else:
-            st.dataframe(df, use_container_width=True, hide_index=True)
-    else:
-        st.write("Table `bankruptcy_records` does not exist yet.")
+    # ── Bankruptcy records table ──
+    st.markdown('<div class="section-header">Bankruptcy Records</div>', unsafe_allow_html=True)
 
-    # Outreach log
-    st.subheader("Outreach Log")
-    if table_exists(conn, "outreach_log"):
-        df_out = query_df(conn, "SELECT * FROM outreach_log ORDER BY sent_at DESC LIMIT 200")
-        if df_out.empty:
-            st.write("No outreach entries yet.")
+    if table_exists(conn, "bankruptcy_records"):
+        df = query_df(conn, """
+            SELECT company_name, initiated_date, region, industry_name,
+                   sni_code, employees, net_sales, total_assets,
+                   trustee, trustee_firm,
+                   priority, ai_score, asset_types, ai_reason,
+                   org_number
+            FROM bankruptcy_records
+            ORDER BY initiated_date DESC
+        """)
+        if df.empty:
+            st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No records yet.</p>', unsafe_allow_html=True)
         else:
-            st.dataframe(df_out, use_container_width=True, hide_index=True)
+            row_height = 35
+            table_height = min(len(df) * row_height + 60, 700)
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+                height=table_height,
+                column_config={
+                    "company_name":   st.column_config.TextColumn("Company"),
+                    "initiated_date": st.column_config.TextColumn("Date"),
+                    "region":         st.column_config.TextColumn("Region"),
+                    "industry_name":  st.column_config.TextColumn("Industry"),
+                    "sni_code":       st.column_config.TextColumn("SNI"),
+                    "employees":      st.column_config.TextColumn("Employees"),
+                    "net_sales":      st.column_config.TextColumn("Net Sales"),
+                    "total_assets":   st.column_config.TextColumn("Assets"),
+                    "trustee":        st.column_config.TextColumn("Trustee"),
+                    "trustee_firm":   st.column_config.TextColumn("Firm"),
+                    "priority":       st.column_config.TextColumn("Priority"),
+                    "ai_score":       st.column_config.NumberColumn("Score", format="%d / 10"),
+                    "asset_types":    st.column_config.TextColumn("Asset Types"),
+                    "ai_reason":      st.column_config.TextColumn("AI Reason", width="large"),
+                    "org_number":     st.column_config.TextColumn("Org №"),
+                },
+            )
     else:
-        st.write("Table `outreach_log` does not exist yet.")
+        st.markdown('<p style="color:#94A3B8;">Table not found yet.</p>', unsafe_allow_html=True)
+
+    # ── Outreach log ──
+    st.markdown('<div class="section-header" style="margin-top:2rem;">Outreach Log</div>', unsafe_allow_html=True)
+
+    if table_exists(conn, "outreach_log"):
+        df_out = query_df(conn, """
+            SELECT company_name, trustee_email, status, subject, sent_at, error_message
+            FROM outreach_log
+            ORDER BY sent_at DESC
+            LIMIT 200
+        """)
+        if df_out.empty:
+            st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No outreach entries yet.</p>', unsafe_allow_html=True)
+        else:
+            out_height = min(len(df_out) * 35 + 60, 400)
+            st.dataframe(
+                df_out,
+                use_container_width=True,
+                hide_index=True,
+                height=out_height,
+                column_config={
+                    "company_name":  st.column_config.TextColumn("Company"),
+                    "trustee_email": st.column_config.TextColumn("Recipient"),
+                    "status":        st.column_config.TextColumn("Status"),
+                    "subject":       st.column_config.TextColumn("Subject"),
+                    "sent_at":       st.column_config.TextColumn("Date"),
+                    "error_message": st.column_config.TextColumn("Error"),
+                },
+            )
+    else:
+        st.markdown('<p style="color:#94A3B8;">No outreach log yet.</p>', unsafe_allow_html=True)
 
 conn.close()
 
 # ---------------------------------------------------------------------------
-# TAB 2: Outreach Queue (read-write for outreach_log only)
+# TAB 2: Outreach Queue
 # ---------------------------------------------------------------------------
 with tab_queue:
-    st.subheader("Pending Outreach Emails")
-    st.caption("Review, edit, approve or reject outreach emails before sending.")
 
     rw_conn = get_rw_connection()
 
     if rw_conn is None:
         st.warning("Database not found. Run the scraper first.")
     elif not table_exists(rw_conn, "outreach_log"):
-        st.write("No outreach log table yet. Run the scraper with MAILGUN_OUTREACH_ENABLED=true.")
+        st.markdown('<p style="color:#94A3B8;">No outreach log yet. Run the scraper with MAILGUN_OUTREACH_ENABLED=true.</p>', unsafe_allow_html=True)
         rw_conn.close()
     else:
         pending = rw_conn.execute(
@@ -192,43 +471,47 @@ with tab_queue:
                ORDER BY COALESCE(b.ai_score, 0) DESC, o.id"""
         ).fetchall()
 
+        # ── Pending section ──
+        st.markdown(f'<div class="section-header">Pending Approval &nbsp;·&nbsp; {len(pending)} emails</div>', unsafe_allow_html=True)
+
         if not pending:
-            st.info("No pending emails. Run the scraper to stage new outreach.")
+            st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No pending emails. Run the scraper to stage new outreach.</p>', unsafe_allow_html=True)
         else:
-            # Bulk actions
-            col_approve_all, col_reject_all, _ = st.columns([1, 1, 3])
-            with col_approve_all:
-                if st.button("Approve All Pending"):
+            col_aa, col_ra, _ = st.columns([1.2, 1.2, 6])
+            with col_aa:
+                if st.button("✓ Approve All", type="primary"):
                     rw_conn.execute("UPDATE outreach_log SET status = 'approved' WHERE status = 'pending'")
                     rw_conn.commit()
                     st.rerun()
-            with col_reject_all:
-                if st.button("Reject All Pending"):
+            with col_ra:
+                if st.button("✕ Reject All"):
                     rw_conn.execute("UPDATE outreach_log SET status = 'rejected' WHERE status = 'pending'")
                     rw_conn.commit()
                     st.rerun()
 
-            st.divider()
-
-            _priority_badge = {'HIGH': '🔴 HIGH', 'MEDIUM': '🟡 MEDIUM', 'LOW': '🟢 LOW'}
+            st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
             for row_id, org_num, email, company, subject, body, priority, ai_score, asset_types, ai_reason in pending:
-                with st.container(border=True):
-                    badge = _priority_badge.get(priority, '⚪ —')
-                    score_str = f"{ai_score}/10" if ai_score else "—"
-                    st.markdown(f"**{company}** ({org_num}) &nbsp; {badge} &nbsp; Score: {score_str}")
-                    if asset_types:
-                        st.markdown(" ".join(f"`{t}`" for t in asset_types.split(",")))
-                    if ai_reason:
-                        st.caption(ai_reason)
-                    st.markdown(f"To: `{email}`")
-                    st.text_input("Subject", value=subject or "", key=f"subj_{row_id}", disabled=True)
+                score_str = f"{ai_score}/10" if ai_score else "—"
+                header_html = f"""
+                <div class="email-card-header">
+                    <span class="company-name">{company}</span>
+                    {badge(priority)}
+                    <span class="score-chip">Score {score_str}</span>
+                    {pills(asset_types)}
+                </div>
+                {f'<div class="ai-reason">{ai_reason}</div>' if ai_reason else ''}
+                <div class="email-to">To: <span>{email}</span> &nbsp;·&nbsp; {org_num}</div>
+                """
+                st.markdown(f'<div class="email-card">{header_html}</div>', unsafe_allow_html=True)
 
+                with st.container():
+                    st.text_input("Subject", value=subject or "", key=f"subj_{row_id}", disabled=True, label_visibility="collapsed")
                     edited_body = st.text_area(
-                        "Message", value=body or "", height=150, key=f"body_{row_id}"
+                        "Message", value=body or "", height=180,
+                        key=f"body_{row_id}", label_visibility="collapsed"
                     )
-
-                    col_a, col_r, _ = st.columns([1, 1, 4])
+                    col_a, col_r, _ = st.columns([1, 1, 6])
                     with col_a:
                         if st.button("Approve", key=f"approve_{row_id}", type="primary"):
                             rw_conn.execute(
@@ -246,25 +529,26 @@ with tab_queue:
                             rw_conn.commit()
                             st.rerun()
 
-        # Send approved section
-        st.divider()
+                st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+        # ── Send approved section ──
         approved_count = rw_conn.execute(
             "SELECT COUNT(*) FROM outreach_log WHERE status = 'approved'"
         ).fetchone()[0]
 
-        st.subheader(f"Ready to Send ({approved_count} approved)")
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown(f'<div class="section-header">Ready to Send &nbsp;·&nbsp; {approved_count} approved</div>', unsafe_allow_html=True)
 
         if approved_count > 0:
-            if st.button("Send All Approved", type="primary"):
+            if st.button(f"Send {approved_count} Approved Emails", type="primary"):
                 from outreach import send_approved_emails
-                with st.spinner("Sending emails..."):
+                with st.spinner("Sending..."):
                     result = send_approved_emails()
                 st.success(
-                    f"Done: {result['sent']} sent, {result['dry_run']} dry-run, "
-                    f"{result['failed']} failed"
+                    f"Done — {result['sent']} sent, {result['dry_run']} dry-run, {result['failed']} failed"
                 )
                 st.rerun()
         else:
-            st.info("No approved emails to send. Approve pending emails above first.")
+            st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No approved emails to send. Approve emails above first.</p>', unsafe_allow_html=True)
 
         rw_conn.close()

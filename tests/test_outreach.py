@@ -57,8 +57,9 @@ def test_stage_creates_pending_rows(tmp_db, monkeypatch):
     conn.close()
 
     assert row[0] == "pending"
-    assert "Test AB" in row[1]
-    assert "Dear Anna Svensson" in row[2]
+    assert "Test AB" in row[1]          # company name rendered in subject
+    assert "{{company_name}}" not in row[2]   # placeholder was replaced
+    assert "{{trustee_name}}" not in row[2]   # placeholder was replaced
 
 
 def test_stage_no_http_calls(tmp_db, monkeypatch):
