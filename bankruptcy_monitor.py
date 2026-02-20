@@ -581,10 +581,20 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
         )
         return records
 
-    logger.info(f"AI scoring {len(records)} records for Redpine acquisition value...")
+    # Proactive rate limiting — avoids 429s and the 10s SDK retry penalty.
+    # Default 12s = ~5 req/min (free/Tier-1). Set ANTHROPIC_RATE_DELAY=2 for
+    # higher tiers (Tier-2 allows ~50 RPM).
+    rate_delay = float(os.getenv('ANTHROPIC_RATE_DELAY', '12'))
+    logger.info(
+        f"AI scoring {len(records)} records "
+        f"(~{len(records) * rate_delay / 60:.0f} min at {rate_delay}s/request — "
+        f"set ANTHROPIC_RATE_DELAY in .env to adjust)"
+    )
     ai_ok = 0
     ai_failed = 0
-    for record in records:
+    for i, record in enumerate(records):
+        if i > 0:
+            time.sleep(rate_delay)
         ai_score, ai_reason = validate_with_ai(record)
         record.ai_score = ai_score
         record.ai_reason = ai_reason
