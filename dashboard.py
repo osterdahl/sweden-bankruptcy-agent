@@ -73,13 +73,14 @@ html, body, [class*="css"] {
 h1, h2, h3 { letter-spacing: -0.02em; color: var(--text-color); }
 h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 
-/* ── KPI cards — use Streamlit's own surface color so they follow its theme ── */
+/* ── KPI cards — always slightly lighter than the app background ── */
 .kpi-card {
-    background: var(--secondary-background-color);
-    border: 1px solid rgba(128,128,128,0.2);
+    background: color-mix(in srgb, var(--secondary-background-color) 88%, white 12%);
+    border: 1px solid rgba(128,128,128,0.18);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     min-height: 90px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
 .kpi-label {
     font-size: 0.7rem;
@@ -136,8 +137,9 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 
 /* ── Outreach card ── */
 .email-card {
-    background: var(--secondary-background-color);
-    border: 1px solid rgba(128,128,128,0.2);
+    background: color-mix(in srgb, var(--secondary-background-color) 88%, white 12%);
+    border: 1px solid rgba(128,128,128,0.18);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     margin-bottom: 1rem;
@@ -208,6 +210,10 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
     font-size: 0.875rem !important;
     font-weight: 500 !important;
     transition: all 0.15s ease !important;
+}
+[data-testid="stBaseButton-secondary"] {
+    background: color-mix(in srgb, var(--secondary-background-color) 88%, white 12%) !important;
+    border: 1px solid rgba(128,128,128,0.25) !important;
 }
 .stButton > button:hover {
     transform: translateY(-1px);
