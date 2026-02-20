@@ -487,16 +487,11 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
 
 
 def validate_with_ai(record: BankruptcyRecord) -> tuple[int, str]:
-    """Score a record with Claude, identifying Redpine-relevant asset types."""
-    api_key = os.getenv('ANTHROPIC_API_KEY')
-    if not api_key:
-        return (record.ai_score, record.ai_reason or "Rule-based only")
+    """Score a record with an AI model, identifying Redpine-relevant asset types.
 
-    try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=api_key)
-
-        prompt = f"""You assess bankrupt Swedish companies for Redpine, which acquires data assets for AI training and licensing.
+    Provider is selected via AI_PROVIDER env var: 'openai' or 'anthropic' (default).
+    """
+    prompt = f"""You assess bankrupt Swedish companies for Redpine, which acquires data assets for AI training and licensing.
 
 Redpine buys:
 - code: software, firmware, ML models, algorithms, APIs
@@ -517,14 +512,35 @@ Pick asset types from: code, media, cad, sensor, database, none.
 
 Reply ONLY: SCORE:N ASSETS:type1,type2 REASON:one sentence"""
 
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}]
-        )
+    provider = os.getenv('AI_PROVIDER', 'anthropic').lower()
 
-        response = message.content[0].text.strip()
-        score_match = re.search(r'SCORE:(\d+)', response)
+    try:
+        if provider == 'openai':
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                return (record.ai_score, record.ai_reason or "Rule-based only (no OPENAI_API_KEY)")
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            resp = client.chat.completions.create(
+                model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
+                max_tokens=100,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            response = resp.choices[0].message.content.strip()
+        else:
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                return (record.ai_score, record.ai_reason or "Rule-based only (no ANTHROPIC_API_KEY)")
+            from anthropic import Anthropic
+            client = Anthropic(api_key=api_key)
+            resp = client.messages.create(
+                model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
+                max_tokens=100,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            response = resp.content[0].text.strip()
+
+        score_match  = re.search(r'SCORE:(\d+)', response)
         assets_match = re.search(r'ASSETS:([\w,]+)', response)
         reason_match = re.search(r'REASON:(.+)', response)
 
@@ -581,14 +597,15 @@ def score_bankruptcies(records: List[BankruptcyRecord]) -> List[BankruptcyRecord
         )
         return records
 
-    # Proactive rate limiting — avoids 429s and the 10s SDK retry penalty.
-    # Default 12s = ~5 req/min (free/Tier-1). Set ANTHROPIC_RATE_DELAY=2 for
-    # higher tiers (Tier-2 allows ~50 RPM).
-    rate_delay = float(os.getenv('ANTHROPIC_RATE_DELAY', '12'))
+    # Proactive rate limiting — avoids 429s and the retry penalty.
+    # Default 0.5s works for OpenAI (500+ RPM). Set AI_RATE_DELAY=12 for
+    # Anthropic free/Tier-1 (~5 RPM).
+    rate_delay = float(os.getenv('AI_RATE_DELAY', '0.5'))
+    provider = os.getenv('AI_PROVIDER', 'anthropic')
+    model = os.getenv('AI_MODEL', 'gpt-4o-mini' if provider == 'openai' else 'claude-haiku-4-5-20251001')
     logger.info(
-        f"AI scoring {len(records)} records "
-        f"(~{len(records) * rate_delay / 60:.0f} min at {rate_delay}s/request — "
-        f"set ANTHROPIC_RATE_DELAY in .env to adjust)"
+        f"AI scoring {len(records)} records via {provider}/{model} "
+        f"(~{len(records) * rate_delay / 60:.1f} min — set AI_RATE_DELAY in .env to adjust)"
     )
     ai_ok = 0
     ai_failed = 0
