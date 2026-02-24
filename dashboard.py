@@ -9,6 +9,7 @@ Run: streamlit run dashboard.py
 
 import os
 import sqlite3
+from html import escape
 from pathlib import Path
 
 import pandas as pd
@@ -227,6 +228,8 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
                  line-height: 1.5; margin: 6px 0 10px; }
 .email-to      { font-size: 0.8rem; color: var(--text-color); opacity: 0.45; margin-bottom: 10px; }
 .email-to span { opacity: 1; font-weight: 500; }
+.company-meta  { font-size: 0.78rem; color: var(--text-color); opacity: 0.55;
+                 margin: 4px 0 8px; }
 
 /* ── Status text ── */
 .status-ok      { color: #059669; font-size: 0.82rem; font-weight: 500; }
@@ -535,7 +538,8 @@ with tab_queue:
         pending = rw_conn.execute(
             """SELECT o.id, o.org_number, o.trustee_email, o.company_name,
                       o.subject, o.body,
-                      b.priority, b.ai_score, b.asset_types, b.ai_reason
+                      b.priority, b.ai_score, b.asset_types, b.ai_reason,
+                      b.employees, b.net_sales, b.total_assets, b.industry_name
                FROM outreach_log o
                LEFT JOIN bankruptcy_records b ON o.org_number = b.org_number
                WHERE o.status = 'pending'
@@ -563,17 +567,41 @@ with tab_queue:
 
             st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
 
-            for row_id, org_num, email, company, subject, body, priority, ai_score, asset_types, ai_reason in pending:
+            def fmt_sek(v):
+                if not v:
+                    return None
+                if v >= 1_000_000:
+                    return f"{v / 1_000_000:.1f}M SEK"
+                if v >= 1_000:
+                    return f"{v / 1_000:.0f}k SEK"
+                return f"{v} SEK"
+
+            for row_id, org_num, email, company, subject, body, priority, ai_score, asset_types, ai_reason, employees, net_sales, total_assets, industry_name in pending:
                 score_str = f"{ai_score}/10" if ai_score else "—"
+
+                meta_parts = []
+                if industry_name:
+                    meta_parts.append(escape(industry_name))
+                if employees:
+                    meta_parts.append(f"{employees:,} employees")
+                rev = fmt_sek(net_sales)
+                if rev:
+                    meta_parts.append(f"Revenue {rev}")
+                assets = fmt_sek(total_assets)
+                if assets:
+                    meta_parts.append(f"Assets {assets}")
+                meta_html = " · ".join(meta_parts)
+
                 header_html = f"""
                 <div class="email-card-header">
-                    <span class="company-name">{company}</span>
+                    <span class="company-name">{escape(company or '')}</span>
                     {badge(priority)}
                     <span class="score-chip">Score {score_str}</span>
                     {pills(asset_types)}
                 </div>
-                {f'<div class="ai-reason">{ai_reason}</div>' if ai_reason else ''}
-                <div class="email-to">To: <span>{email}</span> &nbsp;·&nbsp; {org_num}</div>
+                {f'<div class="company-meta">{meta_html}</div>' if meta_html else ''}
+                {f'<div class="ai-reason">{escape(ai_reason)}</div>' if ai_reason else ''}
+                <div class="email-to">To: <span>{escape(email or '')}</span> &nbsp;·&nbsp; {escape(org_num or '')}</div>
                 """
                 st.markdown(f'<div class="email-card">{header_html}</div>', unsafe_allow_html=True)
 
@@ -602,6 +630,20 @@ with tab_queue:
                             st.rerun()
 
                 st.markdown("<div style='height:0.5rem'></div>", unsafe_allow_html=True)
+
+        # ── Re-queue dry-run section ──
+        dry_run_count = rw_conn.execute(
+            "SELECT COUNT(*) FROM outreach_log WHERE status = 'dry-run'"
+        ).fetchone()[0]
+
+        if dry_run_count > 0:
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown(f'<div class="section-header">Dry-Run Queue &nbsp;·&nbsp; {dry_run_count} not sent</div>', unsafe_allow_html=True)
+            st.caption("These were approved while MAILGUN_LIVE=false so nothing was delivered. Set MAILGUN_LIVE=true, then re-queue to send for real.")
+            if st.button(f"Re-queue {dry_run_count} dry-run emails as pending"):
+                rw_conn.execute("UPDATE outreach_log SET status = 'pending' WHERE status = 'dry-run'")
+                rw_conn.commit()
+                st.rerun()
 
         # ── Send approved section ──
         approved_count = rw_conn.execute(

@@ -229,7 +229,7 @@ def _send_via_mailgun(to_email: str, subject: str, body: str) -> tuple[str, Opti
         resp = requests.post(
             f"{api_url}/{domain}/messages",
             auth=("api", api_key),
-            data={"from": from_email, "to": [to_email], "bcc": "david@redpine.ai", "subject": subject, "text": body},
+            data={"from": from_email, "to": [to_email], "bcc": os.getenv("OUTREACH_BCC_EMAIL", "david@redpine.ai"), "subject": subject, "text": body},
             timeout=15,
         )
         resp.raise_for_status()
