@@ -54,6 +54,68 @@ def query_df(conn, sql: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def ai_asset_search(query: str, conn) -> pd.DataFrame:
+    """Score all candidate records against query in one AI batch call.
+    Candidates: records with asset_types set or priority HIGH/MEDIUM.
+    Returns DataFrame sorted by relevance desc, filtered to score >= 4.
+    """
+    df = query_df(conn, """
+        SELECT company_name, org_number, region, industry_name, sni_code,
+               employees, net_sales, ai_score, asset_types, ai_reason, trustee_email
+        FROM bankruptcy_records
+        WHERE asset_types IS NOT NULL OR priority IN ('HIGH', 'MEDIUM')
+        ORDER BY ai_score DESC
+    """)
+    if df.empty:
+        return df
+
+    lines = [
+        f"{i+1}. {r.company_name} | {r.industry_name} | assets:{r.asset_types or '-'} | {(r.ai_reason or '-')[:80]}"
+        for i, r in df.iterrows()
+    ]
+    prompt = (
+        f'You evaluate bankrupt Swedish companies for data asset acquisition.\n\n'
+        f'Query: "{query}"\n\n'
+        f'Rate each company 0-10 for relevance to this query. 0=irrelevant, 10=perfect match.\n'
+        f'Reply ONLY as JSON array: [{{"i":1,"score":7,"reason":"one sentence"}}, ...]\n\n'
+        f'Companies:\n' + '\n'.join(lines)
+    )
+
+    provider = os.getenv('AI_PROVIDER', 'anthropic').lower()
+    try:
+        if provider == 'openai':
+            from openai import OpenAI
+            resp = OpenAI(api_key=os.getenv('OPENAI_API_KEY')).chat.completions.create(
+                model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.choices[0].message.content.strip()
+        else:
+            from anthropic import Anthropic
+            resp = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY')).messages.create(
+                model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.content[0].text.strip()
+
+        import json
+        import re as _re
+        m = _re.search(r'\[.*\]', raw, _re.DOTALL)
+        scores = json.loads(m.group(0)) if m else []
+        score_map = {item['i']: (item['score'], item.get('reason', '')) for item in scores}
+
+        df['relevance'] = [score_map.get(i + 1, (0, ''))[0] for i in range(len(df))]
+        df['search_reason'] = [score_map.get(i + 1, (0, ''))[1] for i in range(len(df))]
+        result = df[df['relevance'] >= 4].sort_values('relevance', ascending=False)
+        return result[['company_name', 'org_number', 'region', 'industry_name', 'ai_score',
+                        'relevance', 'search_reason', 'asset_types', 'trustee_email']]
+    except Exception as e:
+        st.error(f"AI search failed: {e}")
+        return pd.DataFrame()
+
+
 # ---------------------------------------------------------------------------
 # Page config & global styles
 # ---------------------------------------------------------------------------
@@ -255,7 +317,7 @@ if conn is None:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_overview, tab_queue = st.tabs(["Overview", "Outreach Queue"])
+tab_overview, tab_queue, tab_search = st.tabs(["Overview", "Outreach Queue", "🔍 Asset Search"])
 
 # ---------------------------------------------------------------------------
 # TAB 1: Overview
@@ -506,7 +568,7 @@ with tab_queue:
                 st.markdown(f'<div class="email-card">{header_html}</div>', unsafe_allow_html=True)
 
                 with st.container():
-                    st.text_input("Subject", value=subject or "", key=f"subj_{row_id}", disabled=True, label_visibility="collapsed")
+                    edited_subject = st.text_input("Subject", value=subject or "", key=f"subj_{row_id}", label_visibility="collapsed")
                     edited_body = st.text_area(
                         "Message", value=body or "", height=180,
                         key=f"body_{row_id}", label_visibility="collapsed"
@@ -515,8 +577,8 @@ with tab_queue:
                     with col_a:
                         if st.button("Approve", key=f"approve_{row_id}", type="primary"):
                             rw_conn.execute(
-                                "UPDATE outreach_log SET status = 'approved', body = ? WHERE id = ?",
-                                (edited_body, row_id),
+                                "UPDATE outreach_log SET status = 'approved', subject = ?, body = ? WHERE id = ?",
+                                (edited_subject, edited_body, row_id),
                             )
                             rw_conn.commit()
                             st.rerun()
@@ -552,3 +614,72 @@ with tab_queue:
             st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No approved emails to send. Approve emails above first.</p>', unsafe_allow_html=True)
 
         rw_conn.close()
+
+# ---------------------------------------------------------------------------
+# TAB 3: Asset Search
+# ---------------------------------------------------------------------------
+with tab_search:
+    st.markdown("### 🔍 AI Asset Search")
+    st.caption("Describe the type of data assets you're looking for. AI scores all candidate records in one call.")
+
+    api_ready = bool(os.getenv('OPENAI_API_KEY') or os.getenv('ANTHROPIC_API_KEY'))
+    if not api_ready:
+        st.info("Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env to enable AI search.")
+    else:
+        search_query = st.text_input(
+            "Search query",
+            placeholder='e.g. "source code", "ML training data", "media rights and photo libraries"',
+            label_visibility="collapsed",
+        )
+        if st.button("Search", type="primary", disabled=not search_query) and search_query:
+            with st.spinner(f'Scoring candidates for "{search_query}"…'):
+                results = ai_asset_search(search_query, conn)
+            if results.empty:
+                st.info("No matching companies found (relevance ≥ 4/10).")
+            else:
+                st.success(f"**{len(results)} matching companies** — sorted by relevance")
+                results["_stage"] = False
+                edited = st.data_editor(
+                    results,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_order=["_stage", "company_name", "region", "industry_name",
+                                  "ai_score", "relevance", "search_reason", "asset_types",
+                                  "org_number"],
+                    column_config={
+                        "_stage":        st.column_config.CheckboxColumn("Stage", default=False),
+                        "company_name":  st.column_config.TextColumn("Company", disabled=True),
+                        "region":        st.column_config.TextColumn("Region", disabled=True),
+                        "industry_name": st.column_config.TextColumn("Industry", disabled=True),
+                        "ai_score":      st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
+                        "relevance":     st.column_config.NumberColumn("Relevance", format="%.0f / 10", disabled=True),
+                        "search_reason": st.column_config.TextColumn("Search Reason", width="large", disabled=True),
+                        "asset_types":   st.column_config.TextColumn("Asset Types", disabled=True),
+                        "org_number":    st.column_config.TextColumn("Org №", disabled=True),
+                    },
+                )
+                staged_rows = edited[edited["_stage"] == True]  # noqa: E712
+                if len(staged_rows) > 0:
+                    if st.button(f"Stage {len(staged_rows)} selected for outreach", type="primary"):
+                        from outreach import stage_records_direct
+                        records = staged_rows.fillna("").to_dict("records")
+                        result = stage_records_direct(records)
+                        if result["staged"] > 0:
+                            parts = [f"{result['staged']} staged"]
+                            if result["skipped"]:
+                                parts.append(f"{result['skipped']} already contacted")
+                            if result["opted_out"]:
+                                parts.append(f"{result['opted_out']} opted out")
+                            if result["no_email"]:
+                                parts.append(f"{result['no_email']} skipped (no trustee email)")
+                            st.success(" · ".join(parts))
+                            st.rerun()
+                        else:
+                            reasons = []
+                            if result["skipped"]:
+                                reasons.append(f"{result['skipped']} already in outreach queue")
+                            if result["opted_out"]:
+                                reasons.append(f"{result['opted_out']} opted out")
+                            if result["no_email"]:
+                                reasons.append(f"{result['no_email']} have no trustee email")
+                            st.warning("Nothing staged — " + " · ".join(reasons) if reasons else "Nothing staged.")
