@@ -36,9 +36,9 @@ def _get_connection() -> sqlite3.Connection:
             trustee         TEXT,
             trustee_firm    TEXT,
             trustee_address TEXT,
-            employees       TEXT,
-            net_sales       TEXT,
-            total_assets    TEXT,
+            employees       INTEGER,
+            net_sales       INTEGER,
+            total_assets    INTEGER,
             region          TEXT,
             ai_score        INTEGER,
             ai_reason       TEXT,
@@ -53,7 +53,83 @@ def _get_connection() -> sqlite3.Connection:
     if "asset_types" not in cols:
         conn.execute("ALTER TABLE bankruptcy_records ADD COLUMN asset_types TEXT")
     conn.commit()
+    _migrate_financial_to_int(conn)
     return conn
+
+
+def _migrate_financial_to_int(conn) -> None:
+    """One-time migration: change employees/net_sales/total_assets from TEXT to INTEGER.
+
+    SQLite doesn't support ALTER COLUMN, so we recreate the table. Uses _bk_old
+    as the data source, which also acts as a recovery path if a prior run was
+    interrupted mid-flight.
+    """
+    from bankruptcy_monitor import _parse_sek, _parse_headcount
+
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+
+    # If _bk_old exists, a previous run was interrupted — use it as source and recover
+    if "_bk_old" in tables:
+        source = "_bk_old"
+    else:
+        col_types = {row[1]: row[2] for row in conn.execute("PRAGMA table_info(bankruptcy_records)").fetchall()}
+        if col_types.get("net_sales") == "INTEGER":
+            return  # already migrated
+        source = "bankruptcy_records"
+
+    logger.info("Migrating financial columns to INTEGER affinity…")
+    col_names = [row[1] for row in conn.execute(f"PRAGMA table_info({source})").fetchall()]
+    emp_idx = col_names.index("employees")
+    ns_idx  = col_names.index("net_sales")
+    ta_idx  = col_names.index("total_assets")
+    fsa_idx = col_names.index("first_seen_at")
+    rows = conn.execute(f"SELECT * FROM {source}").fetchall()
+
+    def _convert(row):
+        row = list(row)
+        row[emp_idx] = _parse_headcount(row[emp_idx])
+        row[ns_idx]  = _parse_sek(row[ns_idx])
+        row[ta_idx]  = _parse_sek(row[ta_idx])
+        if not row[fsa_idx]:
+            row[fsa_idx] = "1970-01-01T00:00:00"
+        return row
+
+    converted = [_convert(r) for r in rows]
+
+    if source == "bankruptcy_records":
+        conn.execute("ALTER TABLE bankruptcy_records RENAME TO _bk_old")
+    conn.execute("DROP TABLE IF EXISTS bankruptcy_records")
+    conn.execute("""
+        CREATE TABLE bankruptcy_records (
+            org_number      TEXT NOT NULL,
+            initiated_date  TEXT NOT NULL,
+            trustee_email   TEXT NOT NULL DEFAULT '',
+            company_name    TEXT,
+            court           TEXT,
+            sni_code        TEXT,
+            industry_name   TEXT,
+            trustee         TEXT,
+            trustee_firm    TEXT,
+            trustee_address TEXT,
+            employees       INTEGER,
+            net_sales       INTEGER,
+            total_assets    INTEGER,
+            region          TEXT,
+            ai_score        INTEGER,
+            ai_reason       TEXT,
+            priority        TEXT,
+            asset_types     TEXT,
+            first_seen_at   TEXT NOT NULL,
+            PRIMARY KEY (org_number, initiated_date, trustee_email)
+        )
+    """)
+    conn.executemany(
+        f"INSERT INTO bankruptcy_records ({', '.join(col_names)}) VALUES ({','.join('?' * len(col_names))})",
+        converted,
+    )
+    conn.execute("DROP TABLE _bk_old")
+    conn.commit()
+    logger.info(f"Migrated {len(rows)} records to INTEGER financial columns.")
 
 
 def deduplicate(records: List) -> List:

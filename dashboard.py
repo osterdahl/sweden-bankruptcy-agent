@@ -54,57 +54,67 @@ def query_df(conn, sql: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+_SEARCH_BATCH = 75  # 75 records × ~40 output tokens = 3000 tokens/batch
+
+
 def ai_asset_search(query: str, conn) -> pd.DataFrame:
-    """Score all candidate records against query in one AI batch call.
-    Candidates: records with asset_types set or priority HIGH/MEDIUM.
+    """Score all records against query using batched AI calls.
+    No pre-filter — all records evaluated so financial/industry queries work.
     Returns DataFrame sorted by relevance desc, filtered to score >= 4.
     """
     df = query_df(conn, """
-        SELECT company_name, org_number, region, industry_name, sni_code,
-               employees, net_sales, ai_score, asset_types, ai_reason, trustee_email
+        SELECT company_name, org_number, region, industry_name,
+               employees, net_sales, total_assets, ai_score, asset_types, trustee_email
         FROM bankruptcy_records
-        WHERE asset_types IS NOT NULL OR priority IN ('HIGH', 'MEDIUM')
         ORDER BY ai_score DESC
     """)
     if df.empty:
         return df
 
-    lines = [
-        f"{i+1}. {r.company_name} | {r.industry_name} | assets:{r.asset_types or '-'} | {(r.ai_reason or '-')[:80]}"
-        for i, r in df.iterrows()
+    all_lines = [
+        f"{i+1}. {r.company_name} | {r.industry_name} | "
+        f"sales:{f'{r.net_sales:,} SEK' if r.net_sales else '-'} | "
+        f"assets:{f'{r.total_assets:,} SEK' if r.total_assets else '-'} | "
+        f"emp:{r.employees if r.employees is not None else '-'} | {r.asset_types or '-'}"
+        for i, r in enumerate(df.itertuples())
     ]
-    prompt = (
-        f'You evaluate bankrupt Swedish companies for data asset acquisition.\n\n'
+    system_msg = (
+        'You evaluate bankrupt Swedish companies for data asset acquisition.\n'
         f'Query: "{query}"\n\n'
-        f'Rate each company 0-10 for relevance to this query. 0=irrelevant, 10=perfect match.\n'
-        f'Reply ONLY as JSON array: [{{"i":1,"score":7,"reason":"one sentence"}}, ...]\n\n'
-        f'Companies:\n' + '\n'.join(lines)
+        'Rate each company 0-10 for relevance. 0=irrelevant, 10=perfect match.\n'
+        'Reply ONLY as JSON array: [{"i":<number>,"score":<0-10>,"reason":"one sentence"}, ...]'
     )
 
+    import json, re as _re
     provider = os.getenv('AI_PROVIDER', 'anthropic').lower()
-    try:
-        if provider == 'openai':
-            from openai import OpenAI
-            resp = OpenAI(api_key=os.getenv('OPENAI_API_KEY')).chat.completions.create(
-                model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = resp.choices[0].message.content.strip()
-        else:
-            from anthropic import Anthropic
-            resp = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY')).messages.create(
-                model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = resp.content[0].text.strip()
+    score_map: dict = {}
+    batches = [all_lines[s:s + _SEARCH_BATCH] for s in range(0, len(all_lines), _SEARCH_BATCH)]
 
-        import json
-        import re as _re
-        m = _re.search(r'\[.*\]', raw, _re.DOTALL)
-        scores = json.loads(m.group(0)) if m else []
-        score_map = {item['i']: (item['score'], item.get('reason', '')) for item in scores}
+    try:
+        progress = st.progress(0, text="Scoring…")
+        for idx, batch in enumerate(batches):
+            progress.progress(idx / len(batches), text=f"Scoring batch {idx+1}/{len(batches)}…")
+            prompt = system_msg + '\n\nCompanies:\n' + '\n'.join(batch)
+            if provider == 'openai':
+                from openai import OpenAI
+                resp = OpenAI(api_key=os.getenv('OPENAI_API_KEY')).chat.completions.create(
+                    model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
+                    max_tokens=3000,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                raw = resp.choices[0].message.content.strip()
+            else:
+                from anthropic import Anthropic
+                resp = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY')).messages.create(
+                    model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
+                    max_tokens=3000,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                raw = resp.content[0].text.strip()
+            m = _re.search(r'\[.*\]', raw, _re.DOTALL)
+            for item in (json.loads(m.group(0)) if m else []):
+                score_map[item['i']] = (item['score'], item.get('reason', ''))
+        progress.empty()
 
         df['relevance'] = [score_map.get(i + 1, (0, ''))[0] for i in range(len(df))]
         df['search_reason'] = [score_map.get(i + 1, (0, ''))[1] for i in range(len(df))]
@@ -433,9 +443,9 @@ with tab_overview:
                     "region":         st.column_config.TextColumn("Region", disabled=True),
                     "industry_name":  st.column_config.TextColumn("Industry", disabled=True),
                     "sni_code":       st.column_config.TextColumn("SNI", disabled=True),
-                    "employees":      st.column_config.TextColumn("Employees", disabled=True),
-                    "net_sales":      st.column_config.TextColumn("Net Sales", disabled=True),
-                    "total_assets":   st.column_config.TextColumn("Assets", disabled=True),
+                    "employees":      st.column_config.NumberColumn("Employees", format="%d", disabled=True),
+                    "net_sales":      st.column_config.NumberColumn("Net Sales (SEK)", format="%,d", disabled=True),
+                    "total_assets":   st.column_config.NumberColumn("Assets (SEK)", format="%,d", disabled=True),
                     "trustee":        st.column_config.TextColumn("Trustee", disabled=True),
                     "trustee_firm":   st.column_config.TextColumn("Firm", disabled=True),
                     "priority":       st.column_config.TextColumn("Priority", disabled=True),
@@ -632,8 +642,7 @@ with tab_search:
             label_visibility="collapsed",
         )
         if st.button("Search", type="primary", disabled=not search_query) and search_query:
-            with st.spinner(f'Scoring candidates for "{search_query}"…'):
-                results = ai_asset_search(search_query, conn)
+            results = ai_asset_search(search_query, conn)
             if results.empty:
                 st.info("No matching companies found (relevance ≥ 4/10).")
             else:

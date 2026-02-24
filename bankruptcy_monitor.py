@@ -44,6 +44,39 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# FINANCIAL FIELD PARSERS
+# ============================================================================
+
+def _parse_sek(val) -> Optional[int]:
+    """Parse "134 TSEK" → 134000, "2,340 TSEK" → 2340000, plain "52000" → 52000, any garbage → None."""
+    if not val:
+        return None
+    s = str(val).strip()
+    if s in ('N/A', '-', ''):
+        return None
+    try:
+        if 'TSEK' in s.upper():
+            return int(float(s.upper().replace('TSEK', '').replace(',', '').strip()) * 1000)
+        # Plain number (already in SEK, or unknown unit) — use as-is
+        return int(float(s.replace(',', '').strip()))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def _parse_headcount(val) -> Optional[int]:
+    """Parse "134" → 134, "2,024" → 2024, any garbage → None."""
+    if not val:
+        return None
+    s = str(val).strip()
+    if s in ('N/A', '-', ''):
+        return None
+    try:
+        return int(float(s.replace(',', '').strip()))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+# ============================================================================
 # DATA MODELS
 # ============================================================================
 
@@ -59,9 +92,9 @@ class BankruptcyRecord:
     trustee: str
     trustee_firm: str
     trustee_address: str
-    employees: str
-    net_sales: str
-    total_assets: str
+    employees:    Optional[int]
+    net_sales:    Optional[int]
+    total_assets: Optional[int]
     region: str = ""
     ai_score: Optional[int] = None      # 1-10 acquisition value score
     ai_reason: Optional[str] = None     # Brief explanation
@@ -113,7 +146,7 @@ def _parse_card(card) -> Optional[BankruptcyRecord]:
         addr_el = card.select_one('.bankruptcy-card__trustee-address')
         trustee_address = addr_el.get_text().strip().replace('\n', ', ') if addr_el else 'N/A'
 
-        employees = net_sales = total_assets = 'N/A'
+        employees = net_sales = total_assets = None
         for item in card.select('.bankruptcy-card__financial-item'):
             label_el = item.select_one('.bankruptcy-card__financial-label')
             value_el = item.select_one('.bankruptcy-card__financial-value')
@@ -122,11 +155,11 @@ def _parse_card(card) -> Optional[BankruptcyRecord]:
             label = label_el.get_text(strip=True)
             value = value_el.get_text(strip=True)
             if 'Number of employees' in label:
-                employees = value
+                employees = _parse_headcount(value)
             elif 'Net sales' in label:
-                net_sales = value
+                net_sales = _parse_sek(value)
             elif 'Total assets' in label:
-                total_assets = value
+                total_assets = _parse_sek(value)
 
         return BankruptcyRecord(
             company_name=company_name,
@@ -591,25 +624,14 @@ def filter_records(records: List[BankruptcyRecord]) -> List[BankruptcyRecord]:
                 continue
 
         # Employee filter
-        if min_employees > 0 and record.employees != 'N/A':
-            try:
-                emp_count = int(record.employees.replace(',', ''))
-                if emp_count < min_employees:
-                    continue
-            except ValueError:
-                pass
+        if min_employees > 0:
+            if record.employees is None or record.employees < min_employees:
+                continue
 
-        # Revenue filter (Net Sales in TSEK = thousands of SEK)
-        if min_revenue > 0 and record.net_sales != 'N/A':
-            try:
-                # Parse "7,739 TSEK" format - remove commas, extract number, convert TSEK to SEK
-                revenue_str = record.net_sales.replace(',', '').replace('TSEK', '').strip()
-                revenue_tsek = int(revenue_str)
-                revenue_sek = revenue_tsek * 1000  # Convert thousands to actual SEK
-                if revenue_sek < min_revenue:
-                    continue
-            except ValueError:
-                pass
+        # Revenue filter
+        if min_revenue > 0:
+            if record.net_sales is None or record.net_sales < min_revenue:
+                continue
 
         filtered.append(record)
 
@@ -682,15 +704,11 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
             score = HIGH_VALUE_SNI_CODES[sni[:3]]
 
     # Size boost — more employees = more accumulated data assets
-    try:
-        if record.employees and record.employees != 'N/A':
-            emp_count = int(record.employees.replace(',', ''))
-            if emp_count >= 50:
-                score = min(score + 2, 10)
-            elif emp_count >= 20:
-                score = min(score + 1, 10)
-    except ValueError:
-        pass
+    if record.employees:
+        if record.employees >= 50:
+            score = min(score + 2, 10)
+        elif record.employees >= 20:
+            score = min(score + 1, 10)
 
     # Company name signals — Redpine-specific keywords
     asset_keywords = [
