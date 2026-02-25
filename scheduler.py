@@ -1,9 +1,11 @@
 """
-Scheduling and deduplication module for Swedish Bankruptcy Monitor.
+Scheduling and deduplication module for the Nordic Bankruptcy Monitor.
 
-- SQLite-backed dedup store at data/bankruptcies.db
-- Composite dedup key: (org_number, initiated_date, trustee_email)
+- Multi-country support via COUNTRIES env var (default: Sweden only)
+- Database layer delegated to core.database (country-aware SQLite)
+- Composite dedup key: (country, org_number, initiated_date, trustee_email)
 - Optional APScheduler-based scheduling (GitHub Actions cron still works)
+- Fully backward-compatible: runs Sweden-only when COUNTRIES is unset
 """
 
 import logging
@@ -15,12 +17,42 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
+# Canonical DB path — tests monkeypatch these on the scheduler module.
 DB_DIR = Path(__file__).parent / "data"
 DB_PATH = DB_DIR / "bankruptcies.db"
 
+# ---------------------------------------------------------------------------
+# Database layer — imported from core.database when available, otherwise
+# fall back to a minimal inline implementation so the module never breaks.
+# ---------------------------------------------------------------------------
+_USE_CORE_DB = False
+try:
+    import core.database as _core_db
+    _USE_CORE_DB = True
+except ImportError:
+    _core_db = None
+    logger.debug("core.database not available — using inline DB functions")
+
+
+def _sync_db_paths():
+    """Push scheduler's (possibly monkeypatched) DB_DIR/DB_PATH to core.database.
+
+    Tests patch ``scheduler.DB_DIR`` and ``scheduler.DB_PATH``.  Since
+    core.database has its own copies of those globals, we sync before every
+    database call so the overridden paths take effect.
+    """
+    if _core_db is not None:
+        _core_db.DB_DIR = DB_DIR
+        _core_db.DB_PATH = DB_PATH
+
 
 def _get_connection() -> sqlite3.Connection:
-    """Get a SQLite connection, creating the DB and table if needed."""
+    """Get a SQLite connection, creating the DB and tables if needed."""
+    _sync_db_paths()
+    if _USE_CORE_DB:
+        return _core_db.get_connection()
+
+    # Inline fallback — original schema (no country column)
     DB_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     conn.execute("PRAGMA journal_mode=WAL")
@@ -48,104 +80,53 @@ def _get_connection() -> sqlite3.Connection:
             PRIMARY KEY (org_number, initiated_date, trustee_email)
         )
     """)
-    # Migrate existing databases
     cols = {row[1] for row in conn.execute("PRAGMA table_info(bankruptcy_records)").fetchall()}
     if "asset_types" not in cols:
         conn.execute("ALTER TABLE bankruptcy_records ADD COLUMN asset_types TEXT")
     conn.commit()
-    _migrate_financial_to_int(conn)
     return conn
 
 
-def _migrate_financial_to_int(conn) -> None:
-    """One-time migration: change employees/net_sales/total_assets from TEXT to INTEGER.
+def get_cached_keys(country: str = "se") -> set:
+    """Return set of (org_number, initiated_date) for a specific country.
 
-    SQLite doesn't support ALTER COLUMN, so we recreate the table. Uses _bk_old
-    as the data source, which also acts as a recovery path if a prior run was
-    interrupted mid-flight.
+    Intentionally a 2-tuple (not the full PK which includes trustee_email).
+    The scraper uses this only to stop pagination early.
     """
-    from bankruptcy_monitor import _parse_sek, _parse_headcount
+    _sync_db_paths()
+    if _USE_CORE_DB:
+        return _core_db.get_cached_keys(country)
 
-    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
-
-    # If _bk_old exists, a previous run was interrupted — use it as source and recover
-    if "_bk_old" in tables:
-        source = "_bk_old"
-    else:
-        col_types = {row[1]: row[2] for row in conn.execute("PRAGMA table_info(bankruptcy_records)").fetchall()}
-        if col_types.get("net_sales") == "INTEGER":
-            return  # already migrated
-        source = "bankruptcy_records"
-
-    logger.info("Migrating financial columns to INTEGER affinity…")
-    col_names = [row[1] for row in conn.execute(f"PRAGMA table_info({source})").fetchall()]
-    emp_idx = col_names.index("employees")
-    ns_idx  = col_names.index("net_sales")
-    ta_idx  = col_names.index("total_assets")
-    fsa_idx = col_names.index("first_seen_at")
-    rows = conn.execute(f"SELECT * FROM {source}").fetchall()
-
-    def _convert(row):
-        row = list(row)
-        row[emp_idx] = _parse_headcount(row[emp_idx])
-        row[ns_idx]  = _parse_sek(row[ns_idx])
-        row[ta_idx]  = _parse_sek(row[ta_idx])
-        if not row[fsa_idx]:
-            row[fsa_idx] = "1970-01-01T00:00:00"
-        return row
-
-    converted = [_convert(r) for r in rows]
-
-    if source == "bankruptcy_records":
-        conn.execute("ALTER TABLE bankruptcy_records RENAME TO _bk_old")
-    conn.execute("DROP TABLE IF EXISTS bankruptcy_records")
-    conn.execute("""
-        CREATE TABLE bankruptcy_records (
-            org_number      TEXT NOT NULL,
-            initiated_date  TEXT NOT NULL,
-            trustee_email   TEXT NOT NULL DEFAULT '',
-            company_name    TEXT,
-            court           TEXT,
-            sni_code        TEXT,
-            industry_name   TEXT,
-            trustee         TEXT,
-            trustee_firm    TEXT,
-            trustee_address TEXT,
-            employees       INTEGER,
-            net_sales       INTEGER,
-            total_assets    INTEGER,
-            region          TEXT,
-            ai_score        INTEGER,
-            ai_reason       TEXT,
-            priority        TEXT,
-            asset_types     TEXT,
-            first_seen_at   TEXT NOT NULL,
-            PRIMARY KEY (org_number, initiated_date, trustee_email)
-        )
-    """)
-    conn.executemany(
-        f"INSERT INTO bankruptcy_records ({', '.join(col_names)}) VALUES ({','.join('?' * len(col_names))})",
-        converted,
-    )
-    conn.execute("DROP TABLE _bk_old")
-    conn.commit()
-    logger.info(f"Migrated {len(rows)} records to INTEGER financial columns.")
+    # Inline fallback
+    if not DB_PATH.exists():
+        return set()
+    conn = _get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT org_number, initiated_date FROM bankruptcy_records"
+        ).fetchall()
+        return {(r[0], r[1]) for r in rows}
+    finally:
+        conn.close()
 
 
-def deduplicate(records: List) -> List:
+def deduplicate(records: List, country: str = "se") -> List:
     """Filter out records already in the database. Store new ones.
 
-    Dedup key: (org_number, initiated_date, trustee_email).
+    Dedup key: (country, org_number, initiated_date, trustee_email).
     Returns only records not previously seen.
     """
+    _sync_db_paths()
+    if _USE_CORE_DB:
+        return _core_db.deduplicate(records, country)
+
+    # Inline fallback — original behaviour (no country column)
     if not records:
         return records
-
     conn = _get_connection()
     now = datetime.utcnow().isoformat()
     new_records = []
     duplicates = 0
-
     for r in records:
         key = (r.org_number, r.initiated_date, r.trustee_email or "")
         try:
@@ -168,16 +149,81 @@ def deduplicate(records: List) -> List:
             new_records.append(r)
         except sqlite3.IntegrityError:
             duplicates += 1
-
     conn.commit()
     conn.close()
-
     logger.info(
         f"Dedup: {len(new_records)} new, {duplicates} duplicates skipped "
         f"(out of {len(records)} scraped)"
     )
     return new_records
 
+
+def update_scores(records: List) -> None:
+    """Write ai_score, ai_reason, priority, asset_types back to bankruptcy_records.
+
+    Called after score_bankruptcies() so scores persist across sessions and
+    are visible in the dashboard outreach queue.
+    """
+    _sync_db_paths()
+    if _USE_CORE_DB:
+        return _core_db.update_scores(records)
+
+    # Inline fallback
+    if not records:
+        return
+    conn = _get_connection()
+    try:
+        for r in records:
+            conn.execute(
+                "UPDATE bankruptcy_records SET ai_score=?, ai_reason=?, priority=?, asset_types=? "
+                "WHERE org_number=? AND initiated_date=?",
+                (r.ai_score, r.ai_reason, r.priority, getattr(r, 'asset_types', None),
+                 r.org_number, r.initiated_date),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_trustee_email(org_number: str, initiated_date: str, email: str, country: str = "se") -> None:
+    """Update trustee email for a specific record."""
+    _sync_db_paths()
+    if _USE_CORE_DB:
+        return _core_db.update_trustee_email(org_number, initiated_date, email, country)
+
+    # Inline fallback
+    conn = _get_connection()
+    try:
+        conn.execute(
+            "UPDATE OR IGNORE bankruptcy_records SET trustee_email = ? "
+            "WHERE org_number = ? AND initiated_date = ? AND trustee_email = ''",
+            (email, org_number, initiated_date),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Pipeline — imported from core.pipeline when available (may not exist yet)
+# ---------------------------------------------------------------------------
+try:
+    from core.pipeline import run_pipeline
+except ImportError:
+    run_pipeline = None
+
+# ---------------------------------------------------------------------------
+# Country registry — imported from countries package when available
+# ---------------------------------------------------------------------------
+try:
+    from countries import get_active_countries
+except ImportError:
+    get_active_countries = None
+
+
+# ============================================================================
+# BACKFILL HELPERS (use _get_connection, kept in scheduler for dashboard compat)
+# ============================================================================
 
 def backfill_scores() -> int:
     """Score all unscored records in bankruptcy_records.
@@ -250,32 +296,10 @@ def backfill_scores() -> int:
     return len(records)
 
 
-def update_scores(records: List) -> None:
-    """Write ai_score, ai_reason, priority, asset_types back to bankruptcy_records.
-
-    Called after score_bankruptcies() so scores persist across sessions and
-    are visible in the dashboard outreach queue.
-    """
-    if not records:
-        return
-    conn = _get_connection()
-    try:
-        for r in records:
-            conn.execute(
-                "UPDATE bankruptcy_records SET ai_score=?, ai_reason=?, priority=?, asset_types=? "
-                "WHERE org_number=? AND initiated_date=?",
-                (r.ai_score, r.ai_reason, r.priority, getattr(r, 'asset_types', None),
-                 r.org_number, r.initiated_date),
-            )
-        conn.commit()
-    finally:
-        conn.close()
-
-
 def backfill_emails() -> int:
     """Look up trustee emails for all records currently missing one.
 
-    Deduplicates by trustee/firm pair — each unique pair is looked up once.
+    Deduplicates by trustee/firm pair -- each unique pair is looked up once.
     Updates bankruptcy_records in-place via UPDATE OR IGNORE.
 
     Returns the number of records updated with a found email.
@@ -328,30 +352,55 @@ def backfill_emails() -> int:
     return found
 
 
-def get_cached_keys() -> set:
-    """Return set of (org_number, initiated_date) for all records in the DB.
+# ============================================================================
+# SCHEDULING
+# ============================================================================
 
-    Intentionally a 2-tuple (not the 3-tuple DB primary key which includes
-    trustee_email). The scraper uses this only to stop pagination early — if
-    a record is here, we've already processed it and it will never reach
-    deduplicate(), so trustee_email differences between runs are irrelevant.
+def _get_countries() -> list:
+    """Parse COUNTRIES env var into a list of country codes.
+
+    Returns ``['se']`` when COUNTRIES is unset (backward compatible).
     """
-    if not DB_PATH.exists():
-        return set()
-    conn = _get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT org_number, initiated_date FROM bankruptcy_records"
-        ).fetchall()
-        return {(r[0], r[1]) for r in rows}
-    finally:
-        conn.close()
+    raw = os.getenv("COUNTRIES", "").strip()
+    if not raw:
+        return ["se"]
+    return [c.strip().lower() for c in raw.split(",") if c.strip()]
 
 
 def run_scheduled():
-    """Entry point for APScheduler — runs the full monitor pipeline."""
-    from bankruptcy_monitor import main
-    main()
+    """Entry point for APScheduler -- runs the full monitor pipeline.
+
+    When the ``countries`` package and ``core.pipeline`` are available,
+    loops over every active country. Otherwise falls back to the legacy
+    Sweden-only ``bankruptcy_monitor.main()``.
+    """
+    countries = _get_countries()
+    logger.info(f"Running pipeline for countries: {countries}")
+
+    # Try the new multi-country pipeline first
+    if run_pipeline is not None:
+        for country_code in countries:
+            try:
+                logger.info(f"--- Pipeline start: {country_code.upper()} ---")
+                run_pipeline(country_code)
+                logger.info(f"--- Pipeline done:  {country_code.upper()} ---")
+            except Exception:
+                logger.exception(f"Pipeline failed for {country_code}")
+        return
+
+    # Fallback: legacy Sweden-only pipeline
+    if countries == ["se"] or not countries:
+        logger.info("Falling back to legacy Sweden-only pipeline")
+        from bankruptcy_monitor import main
+        main()
+    else:
+        # Multi-country requested but core.pipeline not available yet
+        logger.warning(
+            f"Multi-country requested ({countries}) but core.pipeline is not available. "
+            "Running Sweden-only as fallback."
+        )
+        from bankruptcy_monitor import main
+        main()
 
 
 def start_scheduler():
@@ -359,7 +408,7 @@ def start_scheduler():
     cron_expr = os.getenv("SCHEDULE_CRON")
 
     if not cron_expr:
-        logger.info("No SCHEDULE_CRON set — running once (use GitHub Actions for scheduling)")
+        logger.info("No SCHEDULE_CRON set -- running once (use GitHub Actions for scheduling)")
         run_scheduled()
         return
 

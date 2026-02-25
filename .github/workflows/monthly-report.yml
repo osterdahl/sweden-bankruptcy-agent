@@ -27,6 +27,10 @@ on:
         required: false
         type: boolean
         default: false
+      countries:
+        description: 'Countries to process (comma-separated: se,no,dk,fi)'
+        required: false
+        default: 'se'
 
 env:
   PYTHON_VERSION: '3.12'
@@ -109,6 +113,9 @@ jobs:
 
           # Skip email if requested
           NO_EMAIL: ${{ github.event.inputs.skip_email }}
+
+          # Multi-country support (comma-separated: se,no,dk,fi)
+          COUNTRIES: ${{ github.event.inputs.countries || 'se' }}
         run: |
           python bankruptcy_monitor.py
 
