@@ -27,7 +27,6 @@ import logging
 import re
 import time
 from calendar import monthrange
-from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import requests

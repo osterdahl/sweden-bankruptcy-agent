@@ -208,17 +208,9 @@ def update_trustee_email(org_number: str, initiated_date: str, email: str, count
 # Pipeline — imported from core.pipeline when available (may not exist yet)
 # ---------------------------------------------------------------------------
 try:
-    from core.pipeline import run_pipeline
+    from core.pipeline import run_all as _run_all_countries
 except ImportError:
-    run_pipeline = None
-
-# ---------------------------------------------------------------------------
-# Country registry — imported from countries package when available
-# ---------------------------------------------------------------------------
-try:
-    from countries import get_active_countries
-except ImportError:
-    get_active_countries = None
+    _run_all_countries = None
 
 
 # ============================================================================
@@ -248,8 +240,7 @@ def backfill_scores() -> int:
     if not rows:
         return 0
 
-    from bankruptcy_monitor import score_bankruptcies, calculate_base_score, BankruptcyRecord
-    import os
+    from bankruptcy_monitor import score_bankruptcies, BankruptcyRecord
 
     records = [
         BankruptcyRecord(
@@ -356,51 +347,23 @@ def backfill_emails() -> int:
 # SCHEDULING
 # ============================================================================
 
-def _get_countries() -> list:
-    """Parse COUNTRIES env var into a list of country codes.
-
-    Returns ``['se']`` when COUNTRIES is unset (backward compatible).
-    """
-    raw = os.getenv("COUNTRIES", "").strip()
-    if not raw:
-        return ["se"]
-    return [c.strip().lower() for c in raw.split(",") if c.strip()]
-
-
 def run_scheduled():
     """Entry point for APScheduler -- runs the full monitor pipeline.
 
-    When the ``countries`` package and ``core.pipeline`` are available,
-    loops over every active country. Otherwise falls back to the legacy
-    Sweden-only ``bankruptcy_monitor.main()``.
+    When ``core.pipeline`` is available, delegates to ``run_all()`` which
+    handles COUNTRIES env-var parsing and per-country iteration internally.
+    Otherwise falls back to the legacy Sweden-only ``bankruptcy_monitor.main()``.
     """
-    countries = _get_countries()
-    logger.info(f"Running pipeline for countries: {countries}")
-
     # Try the new multi-country pipeline first
-    if run_pipeline is not None:
-        for country_code in countries:
-            try:
-                logger.info(f"--- Pipeline start: {country_code.upper()} ---")
-                run_pipeline(country_code)
-                logger.info(f"--- Pipeline done:  {country_code.upper()} ---")
-            except Exception:
-                logger.exception(f"Pipeline failed for {country_code}")
+    if _run_all_countries is not None:
+        logger.info("Running multi-country pipeline via core.pipeline.run_all()")
+        _run_all_countries()
         return
 
     # Fallback: legacy Sweden-only pipeline
-    if countries == ["se"] or not countries:
-        logger.info("Falling back to legacy Sweden-only pipeline")
-        from bankruptcy_monitor import main
-        main()
-    else:
-        # Multi-country requested but core.pipeline not available yet
-        logger.warning(
-            f"Multi-country requested ({countries}) but core.pipeline is not available. "
-            "Running Sweden-only as fallback."
-        )
-        from bankruptcy_monitor import main
-        main()
+    logger.info("Falling back to legacy Sweden-only pipeline")
+    from bankruptcy_monitor import main
+    main()
 
 
 def start_scheduler():

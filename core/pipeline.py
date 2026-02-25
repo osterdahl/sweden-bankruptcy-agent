@@ -10,7 +10,6 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from core.models import BankruptcyRecord
 from core.scoring import score_bankruptcies
 from core.email_lookup import lookup_trustee_emails
 from core.reporting import format_email_html, format_email_plain, send_email
