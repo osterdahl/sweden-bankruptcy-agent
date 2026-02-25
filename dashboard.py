@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Swedish Bankruptcy Monitor — Streamlit Dashboard
+Nordic Bankruptcy Monitor — Streamlit Dashboard
 
 Reporting dashboard with outreach approval queue.
+Supports multi-country data (Sweden, Norway, Denmark, Finland) with
+backward compatibility for Sweden-only databases.
 Read-only for analytics; read-write only for outreach_log approval actions.
 Run: streamlit run dashboard.py
 """
@@ -47,28 +49,77 @@ def table_exists(conn, name: str) -> bool:
     return cur.fetchone() is not None
 
 
-def query_df(conn, sql: str) -> pd.DataFrame:
+def query_df(conn, sql: str, params=None) -> pd.DataFrame:
     """Run a SELECT and return a DataFrame. Returns empty DF on error."""
     try:
-        return pd.read_sql_query(sql, conn)
+        return pd.read_sql_query(sql, conn, params=params)
     except Exception:
         return pd.DataFrame()
+
+
+# ---------------------------------------------------------------------------
+# Multi-country support
+# ---------------------------------------------------------------------------
+COUNTRY_OPTIONS = {"se": "Sweden", "no": "Norway", "dk": "Denmark", "fi": "Finland"}
+COUNTRY_FLAGS = {"se": "\U0001f1f8\U0001f1ea", "no": "\U0001f1f3\U0001f1f4", "dk": "\U0001f1e9\U0001f1f0", "fi": "\U0001f1eb\U0001f1ee"}
+
+
+def _has_country_column(conn, table="bankruptcy_records"):
+    """Check if the country column has been added by the migration."""
+    try:
+        cursor = conn.execute(f"PRAGMA table_info({table})")
+        return "country" in [row[1] for row in cursor.fetchall()]
+    except Exception:
+        return False
+
+
+def _country_filter_sql(has_country, selected_countries, table_alias=""):
+    """Build a WHERE clause fragment for country filtering.
+
+    Returns (sql_fragment, params) where sql_fragment is either:
+    - empty string (no filter needed), or
+    - "AND <alias>country IN (?, ?, ...)" with matching params
+    If *has_country* is False (column missing), returns no filter for
+    backward compatibility.
+    """
+    if not has_country:
+        return "", []
+    prefix = f"{table_alias}." if table_alias else ""
+    placeholders = ",".join("?" for _ in selected_countries)
+    return f"AND {prefix}country IN ({placeholders})", list(selected_countries)
+
+
+def _country_where_sql(has_country, selected_countries, table_alias=""):
+    """Like _country_filter_sql but uses WHERE instead of AND."""
+    if not has_country:
+        return "", []
+    prefix = f"{table_alias}." if table_alias else ""
+    placeholders = ",".join("?" for _ in selected_countries)
+    return f"WHERE {prefix}country IN ({placeholders})", list(selected_countries)
+
+
+def _country_badge(country_code):
+    """Return a flag emoji for a country code, or empty string."""
+    return COUNTRY_FLAGS.get(country_code, "")
 
 
 _SEARCH_BATCH = 75  # 75 records × ~40 output tokens = 3000 tokens/batch
 
 
-def ai_asset_search(query: str, conn) -> pd.DataFrame:
+def ai_asset_search(query: str, conn, has_country=False, countries=None) -> pd.DataFrame:
     """Score all records against query using batched AI calls.
     No pre-filter — all records evaluated so financial/industry queries work.
     Returns DataFrame sorted by relevance desc, filtered to score >= 4.
     """
-    df = query_df(conn, """
+    country_col = ", country" if has_country else ""
+    where_sql, where_params = _country_where_sql(has_country, countries or [])
+    df = query_df(conn, f"""
         SELECT company_name, org_number, region, industry_name,
-               employees, net_sales, total_assets, ai_score, asset_types, trustee_email
+               employees, net_sales, total_assets, ai_score, asset_types, trustee_email{country_col}
         FROM bankruptcy_records
+        {where_sql}
         ORDER BY ai_score DESC
-    """)
+    """, where_params)
     if df.empty:
         return df
 
@@ -80,7 +131,7 @@ def ai_asset_search(query: str, conn) -> pd.DataFrame:
         for i, r in enumerate(df.itertuples())
     ]
     system_msg = (
-        'You evaluate bankrupt Swedish companies for data asset acquisition.\n'
+        'You evaluate bankrupt Nordic companies for data asset acquisition.\n'
         f'Query: "{query}"\n\n'
         'Rate each company 0-10 for relevance. 0=irrelevant, 10=perfect match.\n'
         'Reply ONLY as JSON array: [{"i":<number>,"score":<0-10>,"reason":"one sentence"}, ...]'
@@ -120,8 +171,11 @@ def ai_asset_search(query: str, conn) -> pd.DataFrame:
         df['relevance'] = [score_map.get(i + 1, (0, ''))[0] for i in range(len(df))]
         df['search_reason'] = [score_map.get(i + 1, (0, ''))[1] for i in range(len(df))]
         result = df[df['relevance'] >= 4].sort_values('relevance', ascending=False)
-        return result[['company_name', 'org_number', 'region', 'industry_name', 'ai_score',
-                        'relevance', 'search_reason', 'asset_types', 'trustee_email']]
+        cols = ['company_name', 'org_number', 'region', 'industry_name', 'ai_score',
+                'relevance', 'search_reason', 'asset_types', 'trustee_email']
+        if has_country and 'country' in result.columns:
+            cols.append('country')
+        return result[cols]
     except Exception as e:
         st.error(f"AI search failed: {e}")
         return pd.DataFrame()
@@ -328,9 +382,26 @@ if conn is None:
     st.stop()
 
 # ---------------------------------------------------------------------------
+# Sidebar — Country filter
+# ---------------------------------------------------------------------------
+_br_has_country = _has_country_column(conn, "bankruptcy_records")
+_ol_has_country = _has_country_column(conn, "outreach_log")
+
+selected_countries = st.sidebar.multiselect(
+    "Countries",
+    options=list(COUNTRY_OPTIONS.keys()),
+    default=list(COUNTRY_OPTIONS.keys()),
+    format_func=lambda x: f"{COUNTRY_FLAGS.get(x, '')} {COUNTRY_OPTIONS[x]}",
+)
+
+if not selected_countries:
+    st.sidebar.warning("Select at least one country.")
+    st.stop()
+
+# ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_overview, tab_queue, tab_search = st.tabs(["Overview", "Outreach Queue", "🔍 Asset Search"])
+tab_overview, tab_queue, tab_search = st.tabs(["Overview", "Outreach Queue", "\U0001f50d Asset Search"])
 
 # ---------------------------------------------------------------------------
 # TAB 1: Overview
@@ -340,21 +411,41 @@ with tab_overview:
     # ── KPI row ──
     total_filings, duplicates, sent, failed, high_count, med_count = 0, 0, 0, 0, 0, 0
 
+    br_filter, br_params = _country_where_sql(_br_has_country, selected_countries)
+    br_and, br_and_params = _country_filter_sql(_br_has_country, selected_countries)
+    ol_and, ol_and_params = _country_filter_sql(_ol_has_country, selected_countries)
+
     if table_exists(conn, "bankruptcy_records"):
-        total_filings = conn.execute("SELECT COUNT(*) FROM bankruptcy_records").fetchone()[0]
+        total_filings = conn.execute(
+            f"SELECT COUNT(*) FROM bankruptcy_records {br_filter}", br_params
+        ).fetchone()[0]
         dup_row = conn.execute(
-            "SELECT COUNT(*) FROM ("
-            "  SELECT org_number, initiated_date FROM bankruptcy_records"
-            "  GROUP BY org_number, initiated_date HAVING COUNT(*) > 1"
-            ")"
+            f"SELECT COUNT(*) FROM ("
+            f"  SELECT org_number, initiated_date FROM bankruptcy_records"
+            f"  {br_filter}"
+            f"  GROUP BY org_number, initiated_date HAVING COUNT(*) > 1"
+            f")",
+            br_params,
         ).fetchone()
         duplicates = dup_row[0] if dup_row else 0
-        high_count = conn.execute("SELECT COUNT(*) FROM bankruptcy_records WHERE priority='HIGH'").fetchone()[0]
-        med_count  = conn.execute("SELECT COUNT(*) FROM bankruptcy_records WHERE priority='MEDIUM'").fetchone()[0]
+        high_count = conn.execute(
+            f"SELECT COUNT(*) FROM bankruptcy_records WHERE priority='HIGH' {br_and}",
+            br_and_params,
+        ).fetchone()[0]
+        med_count = conn.execute(
+            f"SELECT COUNT(*) FROM bankruptcy_records WHERE priority='MEDIUM' {br_and}",
+            br_and_params,
+        ).fetchone()[0]
 
     if table_exists(conn, "outreach_log"):
-        sent   = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE status='sent'").fetchone()[0]
-        failed = conn.execute("SELECT COUNT(*) FROM outreach_log WHERE status IN ('failed','bounced')").fetchone()[0]
+        sent = conn.execute(
+            f"SELECT COUNT(*) FROM outreach_log WHERE status='sent' {ol_and}",
+            ol_and_params,
+        ).fetchone()[0]
+        failed = conn.execute(
+            f"SELECT COUNT(*) FROM outreach_log WHERE status IN ('failed','bounced') {ol_and}",
+            ol_and_params,
+        ).fetchone()[0]
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.markdown(kpi("Total Filings", total_filings), unsafe_allow_html=True)
@@ -366,15 +457,65 @@ with tab_overview:
 
     st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
 
+    # ── Per-country analytics breakdown ──
+    if _br_has_country and table_exists(conn, "bankruptcy_records"):
+        st.markdown('<div class="section-header">Country Breakdown</div>', unsafe_allow_html=True)
+
+        # Record counts per country
+        country_counts_df = query_df(conn, f"""
+            SELECT country, COUNT(*) as count
+            FROM bankruptcy_records
+            {br_filter}
+            GROUP BY country
+            ORDER BY count DESC
+        """, br_params)
+
+        if not country_counts_df.empty:
+            country_counts_df["country_label"] = country_counts_df["country"].apply(
+                lambda c: f"{COUNTRY_FLAGS.get(c, '')} {COUNTRY_OPTIONS.get(c, c)}"
+            )
+
+            col_chart, col_priority = st.columns(2)
+
+            with col_chart:
+                st.markdown("**Records per Country**")
+                chart_df = country_counts_df.set_index("country_label")[["count"]]
+                st.bar_chart(chart_df)
+
+            # Per-country priority distribution
+            with col_priority:
+                st.markdown("**Priority Distribution by Country**")
+                priority_df = query_df(conn, f"""
+                    SELECT country,
+                           SUM(CASE WHEN priority = 'HIGH' THEN 1 ELSE 0 END) as HIGH,
+                           SUM(CASE WHEN priority = 'MEDIUM' THEN 1 ELSE 0 END) as MEDIUM,
+                           SUM(CASE WHEN priority = 'LOW' THEN 1 ELSE 0 END) as LOW
+                    FROM bankruptcy_records
+                    {br_filter}
+                    GROUP BY country
+                    ORDER BY country
+                """, br_params)
+
+                if not priority_df.empty:
+                    priority_df["country_label"] = priority_df["country"].apply(
+                        lambda c: f"{COUNTRY_FLAGS.get(c, '')} {COUNTRY_OPTIONS.get(c, c)}"
+                    )
+                    display_df = priority_df.set_index("country_label")[["HIGH", "MEDIUM", "LOW"]]
+                    st.dataframe(display_df, use_container_width=True)
+
+            st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
     # ── AI scoring status ──
     if table_exists(conn, "bankruptcy_records"):
         ai_enabled      = os.getenv("AI_SCORING_ENABLED", "false").lower() == "true"
         has_key         = bool(os.getenv("ANTHROPIC_API_KEY"))
         ai_failed_count = conn.execute(
-            "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_reason LIKE '[AI failed%'"
+            f"SELECT COUNT(*) FROM bankruptcy_records WHERE ai_reason LIKE '[AI failed%' {br_and}",
+            br_and_params,
         ).fetchone()[0]
         unscored = conn.execute(
-            "SELECT COUNT(*) FROM bankruptcy_records WHERE ai_score IS NULL"
+            f"SELECT COUNT(*) FROM bankruptcy_records WHERE ai_score IS NULL {br_and}",
+            br_and_params,
         ).fetchone()[0]
 
         if not ai_enabled:
@@ -396,7 +537,8 @@ with tab_overview:
                 st.rerun()
 
         no_email = conn.execute(
-            "SELECT COUNT(*) FROM bankruptcy_records WHERE trustee_email = '' AND trustee <> 'N/A'"
+            f"SELECT COUNT(*) FROM bankruptcy_records WHERE trustee_email = '' AND trustee <> 'N/A' {br_and}",
+            br_and_params,
         ).fetchone()[0]
         if no_email > 0:
             if os.getenv("BRAVE_API_KEY"):
@@ -414,18 +556,28 @@ with tab_overview:
     st.markdown('<div class="section-header">Bankruptcy Records</div>', unsafe_allow_html=True)
 
     if table_exists(conn, "bankruptcy_records"):
-        df = query_df(conn, """
+        _country_col = ", country" if _br_has_country else ""
+        df = query_df(conn, f"""
             SELECT company_name, initiated_date, region, industry_name,
                    sni_code, employees, net_sales, total_assets,
                    trustee, trustee_firm,
                    priority, ai_score, asset_types, ai_reason,
-                   org_number, trustee_email
+                   org_number, trustee_email{_country_col}
             FROM bankruptcy_records
+            {br_filter}
             ORDER BY initiated_date DESC
-        """)
+        """, br_params)
         if df.empty:
             st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No records yet.</p>', unsafe_allow_html=True)
         else:
+            # Add country flag next to company name
+            if _br_has_country and "country" in df.columns:
+                df["company_display"] = df.apply(
+                    lambda r: f"{_country_badge(r['country'])} {r['company_name']}", axis=1
+                )
+            else:
+                df["company_display"] = df["company_name"]
+
             df["_stage"] = False
             row_height = 35
             table_height = min(len(df) * row_height + 60, 700)
@@ -435,27 +587,28 @@ with tab_overview:
                 hide_index=True,
                 height=table_height,
                 column_order=[
-                    "_stage", "company_name", "initiated_date", "region", "industry_name",
+                    "_stage", "company_display", "initiated_date", "region", "industry_name",
                     "sni_code", "employees", "net_sales", "total_assets", "trustee",
                     "trustee_firm", "priority", "ai_score", "asset_types", "ai_reason", "org_number",
                 ],
                 column_config={
-                    "_stage":         st.column_config.CheckboxColumn("Stage", default=False),
-                    "company_name":   st.column_config.TextColumn("Company", disabled=True),
-                    "initiated_date": st.column_config.TextColumn("Date", disabled=True),
-                    "region":         st.column_config.TextColumn("Region", disabled=True),
-                    "industry_name":  st.column_config.TextColumn("Industry", disabled=True),
-                    "sni_code":       st.column_config.TextColumn("SNI", disabled=True),
-                    "employees":      st.column_config.NumberColumn("Employees", format="%d", disabled=True),
-                    "net_sales":      st.column_config.NumberColumn("Net Sales (SEK)", format="%,d", disabled=True),
-                    "total_assets":   st.column_config.NumberColumn("Assets (SEK)", format="%,d", disabled=True),
-                    "trustee":        st.column_config.TextColumn("Trustee", disabled=True),
-                    "trustee_firm":   st.column_config.TextColumn("Firm", disabled=True),
-                    "priority":       st.column_config.TextColumn("Priority", disabled=True),
-                    "ai_score":       st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
-                    "asset_types":    st.column_config.TextColumn("Asset Types", disabled=True),
-                    "ai_reason":      st.column_config.TextColumn("AI Reason", width="large", disabled=True),
-                    "org_number":     st.column_config.TextColumn("Org №", disabled=True),
+                    "_stage":           st.column_config.CheckboxColumn("Stage", default=False),
+                    "company_display":  st.column_config.TextColumn("Company", disabled=True),
+                    "company_name":     st.column_config.TextColumn("Company (raw)", disabled=True),
+                    "initiated_date":   st.column_config.TextColumn("Date", disabled=True),
+                    "region":           st.column_config.TextColumn("Region", disabled=True),
+                    "industry_name":    st.column_config.TextColumn("Industry", disabled=True),
+                    "sni_code":         st.column_config.TextColumn("SNI", disabled=True),
+                    "employees":        st.column_config.NumberColumn("Employees", format="%d", disabled=True),
+                    "net_sales":        st.column_config.NumberColumn("Net Sales (SEK)", format="%,d", disabled=True),
+                    "total_assets":     st.column_config.NumberColumn("Assets (SEK)", format="%,d", disabled=True),
+                    "trustee":          st.column_config.TextColumn("Trustee", disabled=True),
+                    "trustee_firm":     st.column_config.TextColumn("Firm", disabled=True),
+                    "priority":         st.column_config.TextColumn("Priority", disabled=True),
+                    "ai_score":         st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
+                    "asset_types":      st.column_config.TextColumn("Asset Types", disabled=True),
+                    "ai_reason":        st.column_config.TextColumn("AI Reason", width="large", disabled=True),
+                    "org_number":       st.column_config.TextColumn("Org \u2116", disabled=True),
                 },
             )
             staged_rows = edited_df[edited_df["_stage"] == True]  # noqa: E712
@@ -493,15 +646,24 @@ with tab_overview:
     st.markdown('<div class="section-header" style="margin-top:2rem;">Outreach Log</div>', unsafe_allow_html=True)
 
     if table_exists(conn, "outreach_log"):
-        df_out = query_df(conn, """
-            SELECT company_name, trustee_email, status, subject, sent_at, error_message
+        _ol_country_col = ", country" if _ol_has_country else ""
+        _ol_where, _ol_params = _country_where_sql(_ol_has_country, selected_countries)
+        df_out = query_df(conn, f"""
+            SELECT company_name, trustee_email, status, subject, sent_at, error_message{_ol_country_col}
             FROM outreach_log
+            {_ol_where}
             ORDER BY sent_at DESC
             LIMIT 200
-        """)
+        """, _ol_params)
         if df_out.empty:
             st.markdown('<p style="color:#94A3B8; font-size:0.875rem;">No outreach entries yet.</p>', unsafe_allow_html=True)
         else:
+            # Add country flag next to company name in outreach log
+            if _ol_has_country and "country" in df_out.columns:
+                df_out["company_name"] = df_out.apply(
+                    lambda r: f"{_country_badge(r['country'])} {r['company_name']}", axis=1
+                )
+                df_out = df_out.drop(columns=["country"])
             out_height = min(len(df_out) * 35 + 60, 400)
             st.dataframe(
                 df_out,
@@ -535,16 +697,21 @@ with tab_queue:
         st.markdown('<p style="color:#94A3B8;">No outreach log yet. Run the scraper with MAILGUN_OUTREACH_ENABLED=true.</p>', unsafe_allow_html=True)
         rw_conn.close()
     else:
+        _rw_ol_has_country = _has_country_column(rw_conn, "outreach_log")
+        _rw_country_col = ", o.country" if _rw_ol_has_country else ""
+        _rw_ol_and, _rw_ol_params = _country_filter_sql(_rw_ol_has_country, selected_countries, "o")
+
         pending = rw_conn.execute(
-            """SELECT o.id, o.org_number, o.trustee_email, o.company_name,
+            f"""SELECT o.id, o.org_number, o.trustee_email, o.company_name,
                       o.subject, o.body,
                       b.priority, b.ai_score, b.asset_types, b.ai_reason,
-                      b.employees, b.net_sales, b.total_assets, b.industry_name
+                      b.employees, b.net_sales, b.total_assets, b.industry_name{_rw_country_col}
                FROM outreach_log o
                LEFT JOIN bankruptcy_records b ON o.org_number = b.org_number
-               WHERE o.status = 'pending'
+               WHERE o.status = 'pending' {_rw_ol_and}
                GROUP BY o.id
-               ORDER BY COALESCE(b.ai_score, 0) DESC, o.id"""
+               ORDER BY COALESCE(b.ai_score, 0) DESC, o.id""",
+            _rw_ol_params,
         ).fetchall()
 
         # ── Pending section ──
@@ -576,8 +743,15 @@ with tab_queue:
                     return f"{v / 1_000:.0f}k SEK"
                 return f"{v} SEK"
 
-            for row_id, org_num, email, company, subject, body, priority, ai_score, asset_types, ai_reason, employees, net_sales, total_assets, industry_name in pending:
-                score_str = f"{ai_score}/10" if ai_score else "—"
+            for row in pending:
+                row_id, org_num, email, company = row[0], row[1], row[2], row[3]
+                subject, body = row[4], row[5]
+                priority, ai_score, asset_types, ai_reason = row[6], row[7], row[8], row[9]
+                employees, net_sales, total_assets, industry_name = row[10], row[11], row[12], row[13]
+                row_country = row[14] if _rw_ol_has_country and len(row) > 14 else None
+
+                score_str = f"{ai_score}/10" if ai_score else "\u2014"
+                country_flag = f"{_country_badge(row_country)} " if row_country else ""
 
                 meta_parts = []
                 if industry_name:
@@ -590,18 +764,18 @@ with tab_queue:
                 assets = fmt_sek(total_assets)
                 if assets:
                     meta_parts.append(f"Assets {assets}")
-                meta_html = " · ".join(meta_parts)
+                meta_html = " \u00b7 ".join(meta_parts)
 
                 header_html = f"""
                 <div class="email-card-header">
-                    <span class="company-name">{escape(company or '')}</span>
+                    <span class="company-name">{country_flag}{escape(company or '')}</span>
                     {badge(priority)}
                     <span class="score-chip">Score {score_str}</span>
                     {pills(asset_types)}
                 </div>
                 {f'<div class="company-meta">{meta_html}</div>' if meta_html else ''}
                 {f'<div class="ai-reason">{escape(ai_reason)}</div>' if ai_reason else ''}
-                <div class="email-to">To: <span>{escape(email or '')}</span> &nbsp;·&nbsp; {escape(org_num or '')}</div>
+                <div class="email-to">To: <span>{escape(email or '')}</span> &nbsp;\u00b7&nbsp; {escape(org_num or '')}</div>
                 """
                 st.markdown(f'<div class="email-card">{header_html}</div>', unsafe_allow_html=True)
 
@@ -633,12 +807,13 @@ with tab_queue:
 
         # ── Re-queue dry-run section ──
         dry_run_count = rw_conn.execute(
-            "SELECT COUNT(*) FROM outreach_log WHERE status = 'dry-run'"
+            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'dry-run' {_rw_ol_and}",
+            _rw_ol_params,
         ).fetchone()[0]
 
         if dry_run_count > 0:
             st.markdown("<hr>", unsafe_allow_html=True)
-            st.markdown(f'<div class="section-header">Dry-Run Queue &nbsp;·&nbsp; {dry_run_count} not sent</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-header">Dry-Run Queue &nbsp;\u00b7&nbsp; {dry_run_count} not sent</div>', unsafe_allow_html=True)
             st.caption("These were approved while MAILGUN_LIVE=false so nothing was delivered. Set MAILGUN_LIVE=true, then re-queue to send for real.")
             if st.button(f"Re-queue {dry_run_count} dry-run emails as pending"):
                 rw_conn.execute("UPDATE outreach_log SET status = 'pending' WHERE status = 'dry-run'")
@@ -647,7 +822,8 @@ with tab_queue:
 
         # ── Send approved section ──
         approved_count = rw_conn.execute(
-            "SELECT COUNT(*) FROM outreach_log WHERE status = 'approved'"
+            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'approved' {_rw_ol_and}",
+            _rw_ol_params,
         ).fetchone()[0]
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -684,29 +860,37 @@ with tab_search:
             label_visibility="collapsed",
         )
         if st.button("Search", type="primary", disabled=not search_query) and search_query:
-            results = ai_asset_search(search_query, conn)
+            results = ai_asset_search(search_query, conn, _br_has_country, selected_countries)
             if results.empty:
-                st.info("No matching companies found (relevance ≥ 4/10).")
+                st.info("No matching companies found (relevance \u2265 4/10).")
             else:
-                st.success(f"**{len(results)} matching companies** — sorted by relevance")
+                st.success(f"**{len(results)} matching companies** \u2014 sorted by relevance")
+                # Add country flag to company name in search results
+                if _br_has_country and "country" in results.columns:
+                    results["company_display"] = results.apply(
+                        lambda r: f"{_country_badge(r['country'])} {r['company_name']}", axis=1
+                    )
+                else:
+                    results["company_display"] = results["company_name"]
                 results["_stage"] = False
                 edited = st.data_editor(
                     results,
                     use_container_width=True,
                     hide_index=True,
-                    column_order=["_stage", "company_name", "region", "industry_name",
+                    column_order=["_stage", "company_display", "region", "industry_name",
                                   "ai_score", "relevance", "search_reason", "asset_types",
                                   "org_number"],
                     column_config={
-                        "_stage":        st.column_config.CheckboxColumn("Stage", default=False),
-                        "company_name":  st.column_config.TextColumn("Company", disabled=True),
-                        "region":        st.column_config.TextColumn("Region", disabled=True),
-                        "industry_name": st.column_config.TextColumn("Industry", disabled=True),
-                        "ai_score":      st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
-                        "relevance":     st.column_config.NumberColumn("Relevance", format="%.0f / 10", disabled=True),
-                        "search_reason": st.column_config.TextColumn("Search Reason", width="large", disabled=True),
-                        "asset_types":   st.column_config.TextColumn("Asset Types", disabled=True),
-                        "org_number":    st.column_config.TextColumn("Org №", disabled=True),
+                        "_stage":           st.column_config.CheckboxColumn("Stage", default=False),
+                        "company_display":  st.column_config.TextColumn("Company", disabled=True),
+                        "company_name":     st.column_config.TextColumn("Company (raw)", disabled=True),
+                        "region":           st.column_config.TextColumn("Region", disabled=True),
+                        "industry_name":    st.column_config.TextColumn("Industry", disabled=True),
+                        "ai_score":         st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
+                        "relevance":        st.column_config.NumberColumn("Relevance", format="%.0f / 10", disabled=True),
+                        "search_reason":    st.column_config.TextColumn("Search Reason", width="large", disabled=True),
+                        "asset_types":      st.column_config.TextColumn("Asset Types", disabled=True),
+                        "org_number":       st.column_config.TextColumn("Org \u2116", disabled=True),
                     },
                 )
                 staged_rows = edited[edited["_stage"] == True]  # noqa: E712
