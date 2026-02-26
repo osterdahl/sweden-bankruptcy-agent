@@ -253,9 +253,9 @@ def backfill_scores() -> int:
             trustee='N/A',
             trustee_firm='N/A',
             trustee_address='N/A',
-            employees=row[5] or 'N/A',
-            net_sales=row[6] or 'N/A',
-            total_assets=row[7] or 'N/A',
+            employees=row[5],
+            net_sales=row[6],
+            total_assets=row[7],
             region=row[8] or 'N/A',
         )
         for row in rows
@@ -316,8 +316,8 @@ def backfill_emails() -> int:
             company_name='N/A', court='N/A', sni_code='N/A', industry_name='N/A',
             trustee=row[2] or 'N/A',
             trustee_firm=row[3] or 'N/A',
-            trustee_address='N/A', employees='N/A', net_sales='N/A',
-            total_assets='N/A', region='N/A',
+            trustee_address='N/A', employees=None, net_sales=None,
+            total_assets=None, region='N/A',
         )
         for row in rows
     ]

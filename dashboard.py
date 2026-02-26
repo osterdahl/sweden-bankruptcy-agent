@@ -57,6 +57,8 @@ def query_df(conn, sql: str, params=None) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+import re as _re
+
 # ---------------------------------------------------------------------------
 # Multi-country support
 # ---------------------------------------------------------------------------
@@ -103,82 +105,75 @@ def _country_badge(country_code):
     return COUNTRY_FLAGS.get(country_code, "")
 
 
-_SEARCH_BATCH = 75  # 75 records × ~40 output tokens = 3000 tokens/batch
+def ai_asset_search(query: str, conn, has_country=False, countries=None) -> tuple[pd.DataFrame, str]:
+    """Convert natural-language query to a SQL WHERE clause via one AI call, then execute.
 
-
-def ai_asset_search(query: str, conn, has_country=False, countries=None) -> pd.DataFrame:
-    """Score all records against query using batched AI calls.
-    No pre-filter — all records evaluated so financial/industry queries work.
-    Returns DataFrame sorted by relevance desc, filtered to score >= 4.
+    Returns (DataFrame, where_clause). The where_clause is shown in the UI so the user
+    can see exactly why records matched — and spot if the AI generated something wrong.
     """
     country_col = ", country" if has_country else ""
-    where_sql, where_params = _country_where_sql(has_country, countries or [])
-    df = query_df(conn, f"""
-        SELECT company_name, org_number, region, industry_name,
-               employees, net_sales, total_assets, ai_score, asset_types, trustee_email{country_col}
-        FROM bankruptcy_records
-        {where_sql}
-        ORDER BY ai_score DESC
-    """, where_params)
-    if df.empty:
-        return df
-
-    all_lines = [
-        f"{i+1}. {r.company_name} | {r.industry_name} | "
-        f"sales:{f'{r.net_sales:,} SEK' if r.net_sales else '-'} | "
-        f"assets:{f'{r.total_assets:,} SEK' if r.total_assets else '-'} | "
-        f"emp:{r.employees if r.employees is not None else '-'} | {r.asset_types or '-'}"
-        for i, r in enumerate(df.itertuples())
-    ]
-    system_msg = (
-        'You evaluate bankrupt Nordic companies for data asset acquisition.\n'
+    prompt = (
+        'Generate a SQLite WHERE clause for a Nordic bankruptcy database.\n\n'
+        'Table columns:\n'
+        '  company_name TEXT, industry_name TEXT, sni_code TEXT (e.g. "62","72"),\n'
+        '  asset_types TEXT (comma-separated: "code","media","cad","sensor","database"),\n'
+        '  employees INTEGER, net_sales INTEGER (SEK), total_assets INTEGER (SEK),\n'
+        '  priority TEXT ("HIGH","MEDIUM","LOW"), ai_score INTEGER 1-10, region TEXT,\n'
+        '  ai_reason TEXT, country TEXT ("se","no","dk","fi")\n\n'
         f'Query: "{query}"\n\n'
-        'Rate each company 0-10 for relevance. 0=irrelevant, 10=perfect match.\n'
-        'Reply ONLY as JSON array: [{"i":<number>,"score":<0-10>,"reason":"one sentence"}, ...]'
+        'Reply with ONLY the condition (no "WHERE" keyword, no code fences, no explanation).\n'
+        'Use LIKE for text, = or > < for numbers. Be inclusive — prefer more results over fewer.'
     )
-
-    import json, re as _re
     provider = os.getenv('AI_PROVIDER', 'anthropic').lower()
-    score_map: dict = {}
-    batches = [all_lines[s:s + _SEARCH_BATCH] for s in range(0, len(all_lines), _SEARCH_BATCH)]
-
     try:
-        progress = st.progress(0, text="Scoring…")
-        for idx, batch in enumerate(batches):
-            progress.progress(idx / len(batches), text=f"Scoring batch {idx+1}/{len(batches)}…")
-            prompt = system_msg + '\n\nCompanies:\n' + '\n'.join(batch)
-            if provider == 'openai':
-                from openai import OpenAI
-                resp = OpenAI(api_key=os.getenv('OPENAI_API_KEY')).chat.completions.create(
-                    model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
-                    max_tokens=3000,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                raw = resp.choices[0].message.content.strip()
-            else:
-                from anthropic import Anthropic
-                resp = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY')).messages.create(
-                    model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
-                    max_tokens=3000,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                raw = resp.content[0].text.strip()
-            m = _re.search(r'\[.*\]', raw, _re.DOTALL)
-            for item in (json.loads(m.group(0)) if m else []):
-                score_map[item['i']] = (item['score'], item.get('reason', ''))
-        progress.empty()
-
-        df['relevance'] = [score_map.get(i + 1, (0, ''))[0] for i in range(len(df))]
-        df['search_reason'] = [score_map.get(i + 1, (0, ''))[1] for i in range(len(df))]
-        result = df[df['relevance'] >= 4].sort_values('relevance', ascending=False)
-        cols = ['company_name', 'org_number', 'region', 'industry_name', 'ai_score',
-                'relevance', 'search_reason', 'asset_types', 'trustee_email']
-        if has_country and 'country' in result.columns:
-            cols.append('country')
-        return result[cols]
+        if provider == 'openai':
+            from openai import OpenAI
+            resp = OpenAI(api_key=os.getenv('OPENAI_API_KEY')).chat.completions.create(
+                model=os.getenv('AI_MODEL', 'gpt-4o-mini'),
+                max_tokens=300,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            where = resp.choices[0].message.content.strip()
+        else:
+            from anthropic import Anthropic
+            resp = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY')).messages.create(
+                model=os.getenv('AI_MODEL', 'claude-haiku-4-5-20251001'),
+                max_tokens=300,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            where = resp.content[0].text.strip()
     except Exception as e:
         st.error(f"AI search failed: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(), ""
+
+    # Normalise — strip code fences first, then any "WHERE " prefix
+    where = _re.sub(r'^```\w*\s*|\s*```$', '', where, flags=_re.IGNORECASE).strip()
+    where = _re.sub(r'^\s*WHERE\s+', '', where, flags=_re.IGNORECASE).strip()
+    if not where:
+        st.error("AI returned an empty WHERE clause. Try rephrasing your query.")
+        return pd.DataFrame(), ""
+
+    # Append country filter to AI-generated WHERE clause
+    country_params = []
+    if has_country and countries:
+        placeholders = ",".join("?" for _ in countries)
+        where = f"({where}) AND country IN ({placeholders})"
+        country_params = list(countries)
+
+    try:
+        df = query_df(conn, f"""
+            SELECT company_name, org_number, region, industry_name, sni_code,
+                   employees, net_sales, total_assets, ai_score, asset_types, trustee_email{country_col}
+            FROM bankruptcy_records
+            WHERE {where}
+            ORDER BY ai_score DESC
+            LIMIT 200
+        """, country_params if country_params else None)
+    except Exception as e:
+        st.error(f"SQL error — AI generated invalid query.\n\nWHERE: `{where}`\n\nError: {e}")
+        return pd.DataFrame(), where
+
+    return df, where
 
 
 # ---------------------------------------------------------------------------
@@ -643,6 +638,7 @@ with tab_overview:
         st.markdown('<p style="color:#94A3B8;">Table not found yet.</p>', unsafe_allow_html=True)
 
     # ── Outreach log ──
+
     st.markdown('<div class="section-header" style="margin-top:2rem;">Outreach Log</div>', unsafe_allow_html=True)
 
     if table_exists(conn, "outreach_log"):
@@ -681,8 +677,6 @@ with tab_overview:
             )
     else:
         st.markdown('<p style="color:#94A3B8;">No outreach log yet.</p>', unsafe_allow_html=True)
-
-conn.close()
 
 # ---------------------------------------------------------------------------
 # TAB 2: Outreach Queue
@@ -860,11 +854,14 @@ with tab_search:
             label_visibility="collapsed",
         )
         if st.button("Search", type="primary", disabled=not search_query) and search_query:
-            results = ai_asset_search(search_query, conn, _br_has_country, selected_countries)
+            results, where_sql = ai_asset_search(search_query, conn, _br_has_country, selected_countries)
             if results.empty:
-                st.info("No matching companies found (relevance \u2265 4/10).")
+                st.info("No matching companies found.")
+                if where_sql:
+                    st.caption(f"SQL: `WHERE {where_sql}`")
             else:
-                st.success(f"**{len(results)} matching companies** \u2014 sorted by relevance")
+                st.success(f"**{len(results)} matching companies**")
+                st.caption(f"SQL: `WHERE {where_sql}`")
                 # Add country flag to company name in search results
                 if _br_has_country and "country" in results.columns:
                     results["company_display"] = results.apply(
@@ -878,17 +875,19 @@ with tab_search:
                     use_container_width=True,
                     hide_index=True,
                     column_order=["_stage", "company_display", "region", "industry_name",
-                                  "ai_score", "relevance", "search_reason", "asset_types",
-                                  "org_number"],
+                                  "sni_code", "employees", "net_sales", "total_assets",
+                                  "ai_score", "asset_types", "org_number"],
                     column_config={
                         "_stage":           st.column_config.CheckboxColumn("Stage", default=False),
                         "company_display":  st.column_config.TextColumn("Company", disabled=True),
                         "company_name":     st.column_config.TextColumn("Company (raw)", disabled=True),
                         "region":           st.column_config.TextColumn("Region", disabled=True),
                         "industry_name":    st.column_config.TextColumn("Industry", disabled=True),
+                        "sni_code":         st.column_config.TextColumn("SNI", disabled=True),
+                        "employees":        st.column_config.NumberColumn("Employees", format="%d", disabled=True),
+                        "net_sales":        st.column_config.NumberColumn("Net Sales (SEK)", format="%,d", disabled=True),
+                        "total_assets":     st.column_config.NumberColumn("Assets (SEK)", format="%,d", disabled=True),
                         "ai_score":         st.column_config.NumberColumn("Score", format="%.0f / 10", disabled=True),
-                        "relevance":        st.column_config.NumberColumn("Relevance", format="%.0f / 10", disabled=True),
-                        "search_reason":    st.column_config.TextColumn("Search Reason", width="large", disabled=True),
                         "asset_types":      st.column_config.TextColumn("Asset Types", disabled=True),
                         "org_number":       st.column_config.TextColumn("Org \u2116", disabled=True),
                     },
@@ -918,3 +917,5 @@ with tab_search:
                             if result["no_email"]:
                                 reasons.append(f"{result['no_email']} have no trustee email")
                             st.warning("Nothing staged — " + " · ".join(reasons) if reasons else "Nothing staged.")
+
+conn.close()

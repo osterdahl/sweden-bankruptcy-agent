@@ -704,7 +704,7 @@ def calculate_base_score(record: BankruptcyRecord) -> int:
             score = HIGH_VALUE_SNI_CODES[sni[:3]]
 
     # Size boost — more employees = more accumulated data assets
-    if record.employees:
+    if record.employees is not None:
         if record.employees >= 50:
             score = min(score + 2, 10)
         elif record.employees >= 20:
@@ -969,27 +969,27 @@ def format_email_html(records: List[BankruptcyRecord], year: int, month: int) ->
 
             # Financials section (only if available)
             financials_section = ""
-            if r.employees != 'N/A' or r.net_sales != 'N/A' or r.total_assets != 'N/A':
+            if r.employees is not None or r.net_sales is not None or r.total_assets is not None:
                 financial_cols = []
-                if r.employees != 'N/A':
+                if r.employees is not None:
                     financial_cols.append(f"""
                     <div class="card-col">
                         <span class="label">Employees</span>
-                        <span class="value">{r.employees}</span>
+                        <span class="value">{r.employees:,}</span>
                     </div>
                     """)
-                if r.net_sales != 'N/A':
+                if r.net_sales is not None:
                     financial_cols.append(f"""
                     <div class="card-col">
                         <span class="label">Net Sales</span>
-                        <span class="value">{r.net_sales}</span>
+                        <span class="value">{r.net_sales:,} SEK</span>
                     </div>
                     """)
-                if r.total_assets != 'N/A':
+                if r.total_assets is not None:
                     financial_cols.append(f"""
                     <div class="card-col">
                         <span class="label">Total Assets</span>
-                        <span class="value">{r.total_assets}</span>
+                        <span class="value">{r.total_assets:,} SEK</span>
                     </div>
                     """)
 
@@ -1143,12 +1143,12 @@ Total: {len(records)}"""
             if r.trustee_email:
                 section_text += f"   Email: {r.trustee_email}\n"
 
-            if r.employees != 'N/A':
-                section_text += f"   Employees: {r.employees}\n"
-            if r.net_sales != 'N/A':
-                section_text += f"   Net Sales: {r.net_sales}\n"
-            if r.total_assets != 'N/A':
-                section_text += f"   Total Assets: {r.total_assets}\n"
+            if r.employees is not None:
+                section_text += f"   Employees: {r.employees:,}\n"
+            if r.net_sales is not None:
+                section_text += f"   Net Sales: {r.net_sales:,} SEK\n"
+            if r.total_assets is not None:
+                section_text += f"   Total Assets: {r.total_assets:,} SEK\n"
 
             section_text += f"   POIT: https://poit.bolagsverket.se/poit-app/sok?orgnr={org_clean}\n"
 
