@@ -76,6 +76,9 @@ bankruptcy_agent.log
 # Local exports (optional - comment out if you want to commit exports)
 data/exports/
 
+# Claude Code
+.claude/
+
 # Temporary files
 tmp/
 temp/

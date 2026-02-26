@@ -75,13 +75,15 @@ def _get_db() -> sqlite3.Connection:
 
 
 def _migrate_add_columns(conn: sqlite3.Connection) -> None:
-    """Add subject/body columns if missing (for existing databases)."""
+    """Add subject/body/country columns if missing (for existing databases)."""
     cursor = conn.execute("PRAGMA table_info(outreach_log)")
     columns = {row[1] for row in cursor.fetchall()}
     if "subject" not in columns:
         conn.execute("ALTER TABLE outreach_log ADD COLUMN subject TEXT")
     if "body" not in columns:
         conn.execute("ALTER TABLE outreach_log ADD COLUMN body TEXT")
+    if "country" not in columns:
+        conn.execute("ALTER TABLE outreach_log ADD COLUMN country TEXT DEFAULT 'se'")
 
 
 def is_opted_out(conn: sqlite3.Connection, email: str) -> bool:
@@ -105,19 +107,37 @@ def add_opt_out(email: str) -> None:
         conn.close()
 
 
+def _has_country_column(conn: sqlite3.Connection) -> bool:
+    """Check if outreach_log has the country column."""
+    cursor = conn.execute("PRAGMA table_info(outreach_log)")
+    columns = {row[1] for row in cursor.fetchall()}
+    return "country" in columns
+
+
 def log_send(conn: sqlite3.Connection, org_number: str, trustee_email: str,
              company_name: str, status: str, mailgun_id: Optional[str] = None,
              error_message: Optional[str] = None,
-             subject: Optional[str] = None, body: Optional[str] = None) -> None:
+             subject: Optional[str] = None, body: Optional[str] = None,
+             country: Optional[str] = None) -> None:
     """Record an outreach attempt in the log."""
-    conn.execute(
-        """INSERT INTO outreach_log
-           (org_number, trustee_email, company_name, status, mailgun_id, sent_at,
-            error_message, subject, body)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (org_number, trustee_email, company_name, status, mailgun_id,
-         datetime.now().isoformat(), error_message, subject, body),
-    )
+    if country and _has_country_column(conn):
+        conn.execute(
+            """INSERT INTO outreach_log
+               (org_number, trustee_email, company_name, status, mailgun_id, sent_at,
+                error_message, subject, body, country)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (org_number, trustee_email, company_name, status, mailgun_id,
+             datetime.now().isoformat(), error_message, subject, body, country),
+        )
+    else:
+        conn.execute(
+            """INSERT INTO outreach_log
+               (org_number, trustee_email, company_name, status, mailgun_id, sent_at,
+                error_message, subject, body)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (org_number, trustee_email, company_name, status, mailgun_id,
+             datetime.now().isoformat(), error_message, subject, body),
+        )
     conn.commit()
 
 
@@ -138,13 +158,17 @@ def already_contacted(conn: sqlite3.Connection, org_number: str, trustee_email: 
 TEMPLATE_PATH = Path(__file__).parent / "outreach_template.md"
 
 
-def _load_template() -> tuple[str, str]:
-    """Load subject and body from outreach_template.md.
+def _load_template(country_code: str = "se") -> tuple[str, str]:
+    """Load outreach template for a country. Returns (subject, body).
 
-    Returns (subject, body). Falls back to hardcoded defaults if file missing.
+    Falls back to outreach_template.md if country-specific not found,
+    then to hardcoded defaults if that is also missing.
     """
-    if not TEMPLATE_PATH.exists():
-        logger.warning(f"outreach_template.md not found at {TEMPLATE_PATH} — using built-in fallback")
+    template_path = Path(__file__).parent / "templates" / f"outreach_{country_code}.md"
+    if not template_path.exists():
+        template_path = TEMPLATE_PATH
+    if not template_path.exists():
+        logger.warning(f"No outreach template found for country '{country_code}' — using built-in fallback")
         subject = "Regarding {{company_name}} bankruptcy proceedings"
         body = (
             "Dear {{trustee_name}},\n\n"
@@ -159,7 +183,7 @@ def _load_template() -> tuple[str, str]:
         )
         return subject, body
 
-    content = TEMPLATE_PATH.read_text(encoding="utf-8")
+    content = template_path.read_text(encoding="utf-8")
 
     # Parse subject (line after "## Subject")
     subject = ""
@@ -246,11 +270,15 @@ def _send_via_mailgun(to_email: str, subject: str, body: str) -> tuple[str, Opti
 # STAGING (called by scraper)
 # ============================================================================
 
-def stage_outreach(records) -> dict:
+def stage_outreach(records, country_code: str = "se") -> dict:
     """Stage outreach emails as 'pending' for dashboard approval.
 
     Checks opt-out and dedup, then inserts into outreach_log with status='pending'.
     No emails are sent — they wait for dashboard approval.
+
+    Args:
+        records: List of BankruptcyRecord (or similar) objects.
+        country_code: ISO country code for template selection (default "se").
 
     Returns:
         Summary dict: {'staged': N, 'skipped': N, 'opted_out': N}.
@@ -265,7 +293,7 @@ def stage_outreach(records) -> dict:
     eligible = [r for r in records if r.trustee_email and r.trustee != "N/A"]
     logger.info(f"Outreach staging: {len(eligible)} records with trustee emails (of {len(records)} total)")
 
-    subj_tpl, body_tpl = _load_template()
+    subj_tpl, body_tpl = _load_template(country_code)
 
     try:
         for r in eligible:
@@ -281,10 +309,12 @@ def stage_outreach(records) -> dict:
                 counts["skipped"] += 1
                 continue
 
+            # Use record's country if available, otherwise use the function parameter
+            record_country = getattr(r, "country", None) or country_code
             subject = _render(subj_tpl, r.company_name, r.trustee)
             body = _render(body_tpl, r.company_name, r.trustee)
             log_send(conn, r.org_number, email, r.company_name, "pending",
-                     subject=subject, body=body)
+                     subject=subject, body=body, country=record_country)
             counts["staged"] += 1
 
         logger.info(
@@ -301,18 +331,23 @@ def stage_outreach(records) -> dict:
 # DIRECT STAGING (called by dashboard for manual selection)
 # ============================================================================
 
-def stage_records_direct(records: list) -> dict:
+def stage_records_direct(records: list, country_code: str = "se") -> dict:
     """Stage specific records for outreach, bypassing priority filters.
 
     Does not gate on MAILGUN_OUTREACH_ENABLED — this is a manual user action.
     Each record must be a dict with: org_number, company_name, trustee, trustee_email.
+    Optionally include 'country' per record.
+
+    Args:
+        records: List of dicts with record data.
+        country_code: Default ISO country code for template selection (default "se").
 
     Returns:
         Summary dict: {'staged': N, 'skipped': N, 'opted_out': N, 'no_email': N}.
     """
     conn = _get_db()
     counts = {"staged": 0, "skipped": 0, "opted_out": 0, "no_email": 0}
-    subj_tpl, body_tpl = _load_template()
+    subj_tpl, body_tpl = _load_template(country_code)
 
     try:
         for r in records:
@@ -324,6 +359,7 @@ def stage_records_direct(records: list) -> dict:
             org_number = r.get("org_number", "")
             company_name = r.get("company_name", "")
             trustee = r.get("trustee", "")
+            record_country = r.get("country") or country_code
 
             if is_opted_out(conn, email):
                 counts["opted_out"] += 1
@@ -336,7 +372,7 @@ def stage_records_direct(records: list) -> dict:
             subject = _render(subj_tpl, company_name, trustee)
             body = _render(body_tpl, company_name, trustee)
             log_send(conn, org_number, email, company_name, "pending",
-                     subject=subject, body=body)
+                     subject=subject, body=body, country=record_country)
             counts["staged"] += 1
     finally:
         conn.close()
