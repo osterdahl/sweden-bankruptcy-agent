@@ -1,355 +1,240 @@
-# Swedish Bankruptcy Monitor
+# Nordic Bankruptcy Monitor
 
-**Automated bankruptcy monitoring for Swedish companies using TIC.io open data.**
+**Automated bankruptcy monitoring across Sweden, Norway, Denmark, and Finland.**
 
-## Philosophy
-
-**Radical simplicity.** One Python file, one dependency, complete data, zero CAPTCHA, zero complexity.
+Scrapes official data sources monthly, scores companies by acquisition potential, and sends HTML email reports with trustee contact details.
 
 ## Features
 
-- 📊 **Complete data**: Company, trustee contact, SNI code, financials - everything
-- 🆓 **100% free**: Scrapes TIC.io public open data
-- 🚫 **No CAPTCHA**: No bot detection, no API limits
-- 📧 **Beautiful emails**: HTML reports with alternating row colors
-- 🎯 **Smart filtering**: By region, keywords, employee count
-- 🤖 **AI scoring** (optional): Hybrid prioritization with HIGH/MEDIUM/LOW sections
-- ⚡ **Fast & reliable**: Single source, no enrichment delays
-- 🤖 **GitHub Actions**: Automated monthly runs
-
-## AI Scoring (Optional)
-
-**Intelligent bankruptcy prioritization for data acquisition.**
-
-### How It Works
-
-1. **Rule-Based Scoring** (FREE, fast)
-   - SNI code analysis (tech/consulting/R&D = HIGH value)
-   - Company size metrics (employees, revenue, assets)
-   - Keyword detection in company name
-
-2. **AI Validation** (Optional, only for HIGH candidates)
-   - Claude API analyzes top ~10-15% of bankruptcies
-   - Validates industry fit + data infrastructure likelihood
-   - Provides reasoning for each HIGH-priority case
-   - Cost: ~$0.60-0.90/month for typical usage
-
-### Email Format
-
-When enabled, emails split into 3 sections:
-- ⭐ **HIGH PRIORITY** - Data-rich companies (tech, SaaS, consulting)
-- ⚠️ **MEDIUM PRIORITY** - Moderate acquisition potential
-- ℹ️ **LOW PRIORITY** - Limited data assets expected
-
-### Configuration
-
-```bash
-# Enable AI scoring (default: disabled)
-AI_SCORING_ENABLED=true
-
-# Optional: Claude API for HIGH candidate validation
-ANTHROPIC_API_KEY=sk-ant-your-api-key-here
-```
-
-**Without API key**: Rule-based scoring only (still very effective!)
-**With API key**: Hybrid scoring with AI reasoning for top candidates
-
-### Example Output
-
-January 2026: 837 bankruptcies → 74 HIGH | 623 MEDIUM | 140 LOW
-
-HIGH examples:
-- Computer programming/consultancy (SNI 62)
-- Scientific R&D (SNI 72)
-- Professional/technical services (SNI 749)
-
-## Data Coverage
-
-**11/11 fields (100% when available)**:
-
-| Field | Coverage | Source |
-|-------|----------|--------|
-| Company Name | 100% | TIC.io |
-| Org Number | 100% | TIC.io |
-| Initiated Date | 100% | TIC.io |
-| Court | 95% | TIC.io |
-| Region | 100% | TIC.io |
-| SNI Code | 95% | TIC.io |
-| Industry Name | 95% | TIC.io |
-| **Trustee Name** | **100%** | **TIC.io** |
-| **Trustee Firm** | **100%** | **TIC.io** |
-| **Trustee Address** | **100%** | **TIC.io** |
-| Employees | 70% | TIC.io |
-| Net Sales | 70% | TIC.io |
-| Total Assets | 70% | TIC.io |
-
-**Previous version**: 56% coverage (5/9 fields) from Konkurslistan.se
-**Current version**: **100% coverage** (11/11 fields) from TIC.io
-
-No more missing lawyer contact information!
+- **Multi-country**: Sweden (TIC.io), Norway (brreg.no), Denmark (Statstidende + CVR), Finland (PRH)
+- **Complete data**: Company, trustee contact, industry code, financials — all fields
+- **Free data sources**: All sources are public open data — no API keys required for scraping
+- **Smart filtering**: By region, keywords, employee count, revenue
+- **AI scoring** (optional): Hybrid HIGH/MEDIUM/LOW prioritisation via Claude API
+- **Trustee email lookup**: Country-specific lawyer directories + Brave Search fallback
+- **GitHub Actions**: Automated monthly runs, no infrastructure required
+- **Deduplication**: SQLite cache prevents re-reporting the same bankruptcies
 
 ## Quick Start
 
-### Prerequisites
+### Install
 
 ```bash
-# Install dependencies
-pip install playwright
-playwright install chromium
+pip install -r requirements.txt
 ```
 
-### Configuration
+### Configure
 
-Create `.env` file:
+Create `.env`:
 
 ```bash
-# Required for email
+# Required — email delivery
 SENDER_EMAIL=your-email@gmail.com
-SENDER_PASSWORD=your-app-password
+SENDER_PASSWORD=your-app-password   # Gmail app password, not account password
 RECIPIENT_EMAILS=recipient@example.com
 
-# Optional filters
-FILTER_REGIONS=Stockholm,Göteborg
-FILTER_INCLUDE_KEYWORDS=IT,restaurang
-FILTER_MIN_EMPLOYEES=10
+# Optional — which countries to monitor (default: se)
+COUNTRIES=se
+
+# Optional — filters (defaults shown)
+FILTER_MIN_EMPLOYEES=5
+FILTER_MIN_REVENUE=1000000         # In local currency
+FILTER_REGIONS=Stockholm,Göteborg  # Leave blank for all regions
+FILTER_INCLUDE_KEYWORDS=           # Leave blank for all industries
 ```
 
 ### Run
 
 ```bash
-# Send email report for last month
-python bankruptcy_monitor.py
+# Sweden only, auto-detect last month, send email
+python run.py
 
-# Dry run (print to console)
-NO_EMAIL=true python bankruptcy_monitor.py
+# Multiple countries
+python run.py --countries se,no,dk,fi
 
-# Specific month
-YEAR=2025 MONTH=12 python bankruptcy_monitor.py
+# Dry run — print report, skip email
+python run.py --no-email
+
+# Specific period
+python run.py --year 2026 --month 1
+
+# With AI scoring (requires ANTHROPIC_API_KEY)
+python run.py --ai
+
+# All options
+python run.py --help
 ```
 
-## How It Works
+## CLI Reference
 
-1. **Scrapes TIC.io** open data portal (https://tic.io/en/oppna-data/konkurser)
-2. **Extracts all fields** including trustee name, firm, address
-3. **Filters** by your criteria (region, keywords, size)
-4. **Sends email** with beautiful HTML table
+```
+python run.py [OPTIONS]
 
-## Email Report
+  --countries CODES     Comma-separated country codes: se,no,dk,fi
+                        Default: COUNTRIES env var, or 'se'
+  --year YYYY           Year to process. Default: auto-detect
+  --month 1-12          Month to process. Default: auto-detect
+  --no-email            Dry run — print report, save HTML to /tmp/
+  --ai                  Enable AI scoring via Claude API
 
-The email includes:
+  --filter-regions      Comma-separated regions (e.g. Stockholm,Oslo)
+  --filter-keywords     Comma-separated keywords (e.g. IT,tech,consulting)
+  --min-employees N     Minimum employee count (default: 5)
+  --min-revenue N       Minimum revenue in local currency (default: 1000000)
+```
 
-**Main Table**:
-- Company name & org number
-- Bankruptcy initiated date
-- Region & court
-- SNI code & industry description
-- POIT link
+All options can also be set via environment variables (CLI args take precedence).
 
-**Expandable Details** (per company):
-- Trustee name, law firm, address
-- Number of employees
-- Net sales & total assets
+## AI Scoring (Optional)
 
-## Architecture
+Prioritises bankruptcies by data acquisition potential.
 
-**Before (Konkurslistan.se)**:
-- 515 lines
-- 5/9 fields (56%)
-- Missing all lawyer contact info
-- Complex parsing, variable quality
+### How It Works
 
-**After (TIC.io)**:
-- 524 lines
-- 11/11 fields (100%)
-- Complete lawyer contact info
-- Clean data, consistent structure
+1. **Rule-based** (free, fast) — NACE industry code analysis, employee/revenue thresholds, keyword detection
+2. **AI validation** (optional) — Claude API refines the top ~10–15% of candidates; provides reasoning per company
 
-## Data Source
+Cost with AI enabled: ~$0.60–0.90/month for typical usage.
 
-**TIC.io Open Data**:
-- Free, public bankruptcy data
-- Updated daily
-- Data from Bolagsverket (Swedish Companies Registration Office)
-- No authentication required
-- No CAPTCHA
-- No API rate limits
+### Email Sections
 
-## Filtering
-
-Control what bankruptcies you receive:
-
-**Default filters** (applied automatically):
-- Minimum 5 employees
-- Minimum 1,000,000 SEK revenue
+- **HIGH PRIORITY** — Data-rich companies (tech, SaaS, consulting, R&D)
+- **MEDIUM PRIORITY** — Moderate acquisition potential
+- **LOW PRIORITY** — Limited data assets expected
 
 ```bash
-# Only Stockholm & Göteborg
-FILTER_REGIONS=Stockholm,Göteborg
-
-# Only IT & restaurant companies
-FILTER_INCLUDE_KEYWORDS=IT,restaurang,konsult
-
-# Override minimum thresholds (examples)
-FILTER_MIN_EMPLOYEES=10  # Default: 5
-FILTER_MIN_REVENUE=5000000  # 5M SEK (Default: 1M SEK)
-
-# Disable filters by setting to 0
-FILTER_MIN_EMPLOYEES=0
-FILTER_MIN_REVENUE=0
+AI_SCORING_ENABLED=true
+ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+## Data Sources
+
+| Country | Source | Method | Trustee info |
+|---------|--------|--------|--------------|
+| Sweden | [TIC.io](https://tic.io/en/oppna-data/konkurser) | HTTP + BeautifulSoup | Direct (100%) |
+| Norway | [brreg.no](https://data.brreg.no) | REST API (JSON) | Via court announcements |
+| Denmark | [Statstidende](https://statstidende.dk) + [CVR](https://virk.dk/cvr) | Scraping + API | Via Statstidende notices |
+| Finland | [PRH](https://avoindata.prh.fi) | REST API (JSON) | Via PRH announcements |
+
+All sources are public open data — no authentication required.
+
+## Swedish Data Coverage (TIC.io)
+
+| Field | Coverage |
+|-------|----------|
+| Company name, org number, date | 100% |
+| Region, court | 95–100% |
+| Industry code (SNI/NACE) | 95% |
+| Trustee name, firm, address | 100% |
+| Employees, net sales, total assets | 70% |
 
 ## GitHub Actions
 
-Automated monthly reports:
+Automated monthly runs — no server required.
 
-- Runs 1st of each month at 6 AM UTC
-- Can be triggered manually with optional AI scoring toggle
-- Uses repository secrets for email credentials and API keys
+### Schedule
+
+Runs automatically on the 1st of each month at 6 AM UTC.
 
 ### Required Secrets
 
-Set these in GitHub repository settings → Secrets and variables → Actions:
+Set in GitHub repository → Settings → Secrets and variables → Actions:
 
 ```
-SENDER_EMAIL           # Gmail address
-SENDER_PASSWORD        # Gmail app password
-RECIPIENT_EMAILS       # Comma-separated emails
+SENDER_EMAIL           Gmail address
+SENDER_PASSWORD        Gmail app password
+RECIPIENT_EMAILS       Comma-separated recipient emails
 ```
 
 ### Optional Secrets
 
 ```
-AI_SCORING_ENABLED     # Set to 'true' to enable AI scoring
-ANTHROPIC_API_KEY      # Claude API key (only needed if AI scoring enabled)
-FILTER_REGIONS         # Comma-separated regions
-FILTER_INCLUDE_KEYWORDS # Comma-separated keywords
-FILTER_MIN_EMPLOYEES   # Minimum employee count
+COUNTRIES              Comma-separated country codes (default: se)
+AI_SCORING_ENABLED     Set to 'true' to enable AI scoring
+ANTHROPIC_API_KEY      Required if AI scoring enabled
+LOOKUP_TRUSTEE_EMAIL   Set to 'true' to enable trustee email lookup
+BRAVE_API_KEY          Required if trustee email lookup enabled
+FILTER_REGIONS         Comma-separated regions
+FILTER_INCLUDE_KEYWORDS Comma-separated keywords
+FILTER_MIN_EMPLOYEES   Minimum employee count
+FILTER_MIN_REVENUE     Minimum revenue in local currency
 ```
 
 ### Manual Trigger
 
-Go to Actions → Monthly Bankruptcy Report → Run workflow:
+Actions → Monthly Bankruptcy Report → Run workflow:
+
+- **Countries**: Which countries to process (e.g. `se,no`)
+- **Year / Month**: Process a specific period
 - **Enable AI scoring**: Override secret setting for this run
-- **Year/Month**: Process specific period
 - **Skip email**: Dry run mode
 
-## Configuration
-
-### Required Environment Variables
+## Filtering
 
 ```bash
-SENDER_EMAIL           # Gmail address
-SENDER_PASSWORD        # Gmail app password
-RECIPIENT_EMAILS       # Comma-separated emails
+# Only specific regions
+FILTER_REGIONS=Stockholm,Göteborg,Oslo
+
+# Only specific industries
+FILTER_INCLUDE_KEYWORDS=IT,tech,consulting,data
+
+# Size thresholds
+FILTER_MIN_EMPLOYEES=10
+FILTER_MIN_REVENUE=5000000   # 5M in local currency
+
+# Disable size filters
+FILTER_MIN_EMPLOYEES=0
+FILTER_MIN_REVENUE=0
 ```
 
-### Optional Environment Variables
-
-```bash
-FILTER_REGIONS         # Comma-separated regions
-FILTER_INCLUDE_KEYWORDS # Comma-separated keywords
-FILTER_MIN_EMPLOYEES   # Minimum employee count
-YEAR                   # Override year
-MONTH                  # Override month
-NO_EMAIL              # Set to 'true' for dry run
-```
-
-### Gmail Setup
-
-1. Enable 2-factor authentication
-2. Generate app password: https://myaccount.google.com/apppasswords
-3. Use app password as `SENDER_PASSWORD`
-
-## File Structure
+## Architecture
 
 ```
-bankruptcy_monitor.py  # Single file - entire application (524 lines)
-.env                  # Configuration (gitignored)
-.env.example          # Example configuration
-README.md             # This file
-claude.md             # AI coding context
-requirements.txt      # Python dependencies (just playwright)
+run.py                          # Entry point (CLI args + plugin registration)
+core/
+  pipeline.py                   # Orchestrator: scrape → dedup → score → email
+  models.py                     # BankruptcyRecord dataclass
+  scoring.py                    # Rule-based + AI scoring engine
+  email_lookup.py               # Brave Search + regex email helpers
+  reporting.py                  # HTML/plain email formatting
+  database.py                   # SQLite layer (multi-country aware)
+countries/
+  protocol.py                   # CountryPlugin Protocol definition
+  __init__.py                   # Country registry
+  sweden.py                     # SE: TIC.io scraper
+  norway.py                     # NO: brreg.no API
+  denmark.py                    # DK: Statstidende + CVR
+  finland.py                    # FI: PRH open data API
+templates/
+  outreach_se.md                # Swedish outreach template
+  outreach_no.md / dk / fi      # English outreach templates
+scheduler.py                    # APScheduler entry point (local use)
+dashboard.py                    # Streamlit dashboard (multi-country)
+outreach.py                     # Mailgun outreach staging
+bankruptcy_monitor.py           # Legacy Sweden-only entry point (still works)
 ```
 
-## Development
+Each country is a self-contained plugin module. Adding a new country means adding one file to `countries/` and one import in `run.py`.
 
-```bash
-# Test with dry run
-NO_EMAIL=true YEAR=2026 MONTH=1 python bankruptcy_monitor.py
+## Gmail Setup
 
-# With filtering
-FILTER_REGIONS=Stockholm FILTER_MIN_EMPLOYEES=5 NO_EMAIL=true python bankruptcy_monitor.py
-```
-
-## Comparison: Before vs After
-
-### Data Completeness
-
-| Metric | Konkurslistan | TIC.io |
-|--------|---------------|--------|
-| Fields available | 5/9 (56%) | 11/11 (100%) |
-| Lawyer name | ❌ 60% | ✅ 100% |
-| Lawyer firm | ❌ 0% | ✅ 100% |
-| Lawyer address | ❌ 0% | ✅ 100% |
-| SNI code | ❌ 60% | ✅ 95% |
-| Employees | ❌ 30% | ✅ 70% |
-| Financials | ❌ 30% | ✅ 70% |
-
-### Reliability
-
-| Metric | Konkurslistan | TIC.io |
-|--------|---------------|--------|
-| CAPTCHA | No | No |
-| Parsing complexity | High | Low |
-| Data consistency | Variable | Excellent |
-| Update frequency | Unknown | Daily |
-
-### Code Simplicity
-
-| Metric | Konkurslistan | TIC.io |
-|--------|---------------|--------|
-| Lines of code | 515 | 524 |
-| Data sources | 1 | 1 |
-| Enrichment steps | 1 | 0 |
-| Dependencies | playwright | playwright |
-
-## Why TIC.io?
-
-1. **Complete data**: All fields we need in one place
-2. **Free access**: No API key, no payment
-3. **No CAPTCHA**: Public data portal
-4. **Trustee contact**: Name, firm, address - everything for lawyer lookup
-5. **Better SNI coverage**: 95% vs 60%
-6. **Better financials**: 70% vs 30%
-7. **Daily updates**: Fresh data
-8. **Structured**: Clean HTML, easy parsing
-
-## Limitations
-
-1. **Stateless**: Doesn't track previously sent bankruptcies
-2. **Single source**: Only TIC.io (but it has everything)
-3. **Email dependency**: Gmail for sending
-4. **Court data**: Sometimes missing (95% coverage)
+1. Enable 2-factor authentication on your Google account
+2. Generate an app password: <https://myaccount.google.com/apppasswords>
+3. Use the app password as `SENDER_PASSWORD` (not your account password)
 
 ## Troubleshooting
 
-### No bankruptcies found
+**No bankruptcies found**
+- The data source may not have data for that month yet — try the previous month
+- Filters may be too restrictive — try `--no-email` with `--min-employees 0 --min-revenue 0`
 
-- TIC.io may not have data for that month yet
-- Try previous month
-- Check if filters are too restrictive
+**Email not sending**
+- Use a Gmail app password, not your account password
+- Verify SMTP access is not blocked by your Google account settings
 
-### Email not sending
-
-- Use Gmail app password, not account password
-- Check SMTP access enabled
-- Verify `SENDER_EMAIL` and `SENDER_PASSWORD`
-
-### Parsing errors
-
-- Enable debug: Change `level=logging.INFO` to `level=logging.DEBUG`
-- Check if TIC.io site structure changed
-- Report issue on GitHub
+**Country not processing**
+- Ensure the country code is in `COUNTRIES` (e.g. `COUNTRIES=se,no`)
+- Check logs for scraping errors from that country's data source
 
 ## License
 
@@ -357,6 +242,7 @@ MIT
 
 ## Credits
 
-Data source: [TIC.io Open Data](https://tic.io/en/oppna-data/konkurser) - The Intelligence Company (Jens Nylander)
-
-Original bankruptcy data: [Bolagsverket](https://bolagsverket.se/) (Swedish Companies Registration Office)
+- Sweden: [TIC.io Open Data](https://tic.io/en/oppna-data/konkurser) — The Intelligence Company (Jens Nylander) / [Bolagsverket](https://bolagsverket.se/)
+- Norway: [Brønnøysundregistrene](https://data.brreg.no)
+- Denmark: [Statstidende](https://statstidende.dk) / [Erhvervsstyrelsen CVR](https://virk.dk/cvr)
+- Finland: [PRH — Patent and Registration Office](https://avoindata.prh.fi)
