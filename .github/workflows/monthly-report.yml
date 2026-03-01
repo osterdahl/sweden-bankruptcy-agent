@@ -1,7 +1,7 @@
 name: Monthly Bankruptcy Report
 
-# Simplified autonomous workflow for single-file bankruptcy monitor
-# Runs automatically on the 1st of each month at 6 AM UTC
+# Scheduled workflow for the Nordic Bankruptcy Monitor.
+# Runs automatically on the 1st of each month at 6 AM UTC.
 
 on:
   schedule:
@@ -54,8 +54,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps
 
       - name: Determine date parameters
         id: date
@@ -117,7 +115,7 @@ jobs:
           # Multi-country support (comma-separated: se,no,dk,fi)
           COUNTRIES: ${{ github.event.inputs.countries || 'se' }}
         run: |
-          python bankruptcy_monitor.py
+          python run.py
 
       - name: Report summary
         if: always()
