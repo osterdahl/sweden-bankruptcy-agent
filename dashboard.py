@@ -105,6 +105,20 @@ def _country_badge(country_code):
     return COUNTRY_FLAGS.get(country_code, "")
 
 
+def _registry_url(country: str, org_number: str) -> str:
+    """Return the official company registry URL for the given country and org number."""
+    org = (org_number or "").strip()
+    if country == "se":
+        return f"https://www.allabolag.se/{org}"
+    if country == "no":
+        return f"https://www.brreg.no/virksomhet/?orgnr={org}"
+    if country == "dk":
+        return f"https://datacvr.virk.dk/enhed/virksomhed/{org}"
+    if country == "fi":
+        return f"https://www.ytj.fi/yrityshaku.aspx?path=1547&searchlang=FI&trade-register-status=1&y-tunnus={org}"
+    return ""
+
+
 def ai_asset_search(query: str, conn, has_country=False, countries=None) -> tuple[pd.DataFrame, str]:
     """Convert natural-language query to a SQL WHERE clause via one AI call, then execute.
 
@@ -635,8 +649,14 @@ with tab_overview:
                 df["company_display"] = df.apply(
                     lambda r: f"{_country_badge(r['country'])} {r['company_name']}", axis=1
                 )
+                df["registry_url"] = df.apply(
+                    lambda r: _registry_url(r["country"], r["org_number"]), axis=1
+                )
             else:
                 df["company_display"] = df["company_name"]
+                df["registry_url"] = df["org_number"].apply(
+                    lambda o: f"https://www.allabolag.se/{o}"
+                )
 
             df["_stage"] = False
             row_height = 35
@@ -647,13 +667,14 @@ with tab_overview:
                 hide_index=True,
                 height=table_height,
                 column_order=[
-                    "_stage", "company_display", "initiated_date", "region", "industry_name",
+                    "_stage", "company_display", "registry_url", "initiated_date", "region", "industry_name",
                     "sni_code", "employees", "net_sales", "total_assets", "trustee",
                     "trustee_firm", "priority", "ai_score", "asset_types", "ai_reason", "org_number",
                 ],
                 column_config={
                     "_stage":           st.column_config.CheckboxColumn("Stage", default=False),
                     "company_display":  st.column_config.TextColumn("Company", disabled=True),
+                    "registry_url":     st.column_config.LinkColumn("Registry", display_text="Open ↗"),
                     "company_name":     st.column_config.TextColumn("Company (raw)", disabled=True),
                     "initiated_date":   st.column_config.TextColumn("Date", disabled=True),
                     "region":           st.column_config.TextColumn("Region", disabled=True),
