@@ -59,14 +59,14 @@ def _filter_records(records, country_plugin=None):
             if not any(kw in searchable for kw in filter_keywords):
                 continue
 
-        # Employee filter
-        if min_employees > 0:
-            if record.employees is None or record.employees < min_employees:
+        # Employee filter — skip if data not available (brreg.no, PRH don't provide it)
+        if min_employees > 0 and record.employees is not None:
+            if record.employees < min_employees:
                 continue
 
-        # Revenue filter
-        if min_revenue > 0:
-            if record.net_sales is None or record.net_sales < min_revenue:
+        # Revenue filter — skip if data not available (brreg.no, PRH don't provide it)
+        if min_revenue > 0 and record.net_sales is not None:
+            if record.net_sales < min_revenue:
                 continue
 
         filtered.append(record)
@@ -89,7 +89,7 @@ def run_country(country_plugin: CountryPlugin, year: int, month: int) -> None:
 
     # Step 1: Scrape
     from scheduler import get_cached_keys
-    cached = get_cached_keys()
+    cached = get_cached_keys(code)
     records = country_plugin.scrape_bankruptcies(year, month, cached)
     logger.info(f"[{code.upper()}] Scraped {len(records)} bankruptcies for {year}-{month:02d}")
 
@@ -99,7 +99,7 @@ def run_country(country_plugin: CountryPlugin, year: int, month: int) -> None:
 
     # Step 2: Deduplicate
     from scheduler import deduplicate, update_scores
-    records = deduplicate(records)
+    records = deduplicate(records, code)
 
     if not records:
         logger.info(f"[{code.upper()}] No new bankruptcies after deduplication.")

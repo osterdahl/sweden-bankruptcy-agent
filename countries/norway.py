@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 BRREG_BASE = "https://data.brreg.no/enhetsregisteret/api"
 ENHETER_URL = f"{BRREG_BASE}/enheter"
-OPPDATERINGER_URL = f"{BRREG_BASE}/oppdateringer/enheter"
 
 PAGE_SIZE = 100
 RATE_LIMIT_DELAY = 0.5  # seconds between API requests
@@ -160,143 +159,25 @@ class NorwayPlugin:
     def scrape_bankruptcies(
         self, year: int, month: int, cached_keys: set
     ) -> List[BankruptcyRecord]:
-        """Fetch Norwegian bankruptcy records for the given year/month.
+        """Fetch Norwegian bankruptcy records.
 
-        Strategy:
-        1. Use the oppdateringer (updates) endpoint to find entities whose
-           records changed during the target month.
-        2. For each updated entity, fetch full details and check if
-           ``konkurs`` is True.
-        3. Fall back to the bulk ``konkurs=true`` search and filter by
-           ``registreringsdatoEnhetsregisteret`` if the updates approach
-           yields nothing (covers historical back-fills).
+        Queries all entities currently flagged konkurs=true on brreg.no (~3000
+        records, 31 pages).  The pipeline's deduplication layer filters out
+        previously-seen entries, so only genuinely new bankruptcies are returned.
 
-        Returns only records not already present in *cached_keys*.
-        """
-        records: List[BankruptcyRecord] = []
-
-        # --- Approach 1: Updates endpoint for the target month ---
-        try:
-            records = self._fetch_via_updates(year, month, cached_keys)
-        except Exception as exc:
-            logger.warning(
-                "Norway updates endpoint failed (%s), falling back to bulk search",
-                exc,
-            )
-
-        # --- Approach 2: Bulk konkurs=true search (fallback / back-fill) ---
-        if not records:
-            try:
-                records = self._fetch_via_bulk_search(year, month, cached_keys)
-            except Exception as exc:
-                logger.error("Norway bulk search also failed: %s", exc)
-
-        logger.info(
-            "Norway: found %d new bankruptcy records for %04d-%02d",
-            len(records), year, month,
-        )
-        return records
-
-    # ------------------------------------------------------------------
-    # Updates-based fetch
-    # ------------------------------------------------------------------
-
-    def _fetch_via_updates(
-        self, year: int, month: int, cached_keys: set
-    ) -> List[BankruptcyRecord]:
-        """Poll the oppdateringer endpoint for entity changes in the target month.
-
-        The endpoint returns update events ordered by date.  We filter for
-        events in the target month, then fetch each entity to see if it is
-        now in bankruptcy.
-        """
-        # Build ISO-8601 date range for the target month
-        start_date = f"{year:04d}-{month:02d}-01T00:00:00.000Z"
-        if month == 12:
-            end_date = f"{year + 1:04d}-01-01T00:00:00.000Z"
-        else:
-            end_date = f"{year:04d}-{month + 1:02d}-01T00:00:00.000Z"
-
-        seen_orgnrs: set = set()
-        records: List[BankruptcyRecord] = []
-        page = 0
-
-        while True:
-            params = {
-                "dato": start_date,
-                "size": PAGE_SIZE,
-                "page": page,
-            }
-            resp = self._api_get(OPPDATERINGER_URL, params=params)
-            if resp is None:
-                break
-
-            data = resp.json()
-            updates = data.get("_embedded", {}).get("oppdateringer", [])
-            if not updates:
-                break
-
-            for update in updates:
-                update_date = update.get("dato", "")
-                # Stop if we've gone past the target month
-                if update_date >= end_date:
-                    return records
-
-                orgnr = update.get("organisasjonsnummer", "")
-                if not orgnr or orgnr in seen_orgnrs:
-                    continue
-                seen_orgnrs.add(orgnr)
-
-                # Fetch full entity to check konkurs status
-                entity = self._fetch_entity(orgnr)
-                if entity and entity.get("konkurs") is True:
-                    key = (orgnr, "")
-                    if key not in cached_keys:
-                        record = self._entity_to_record(entity, year, month)
-                        if record:
-                            cached_keys.add(key)
-                            records.append(record)
-
-            # Check pagination
-            page_info = data.get("page", {})
-            total_pages = page_info.get("totalPages", 1)
-            if page + 1 >= total_pages:
-                break
-            page += 1
-
-        return records
-
-    # ------------------------------------------------------------------
-    # Bulk search fallback
-    # ------------------------------------------------------------------
-
-    def _fetch_via_bulk_search(
-        self, year: int, month: int, cached_keys: set
-    ) -> List[BankruptcyRecord]:
-        """Fetch all entities currently in bankruptcy and filter to those
-        whose registration date falls in the target month.
-
-        This is less precise than the updates approach (it can only filter
-        by registreringsdatoEnhetsregisteret, not the actual konkurs date)
-        but works well for back-filling historical data.
+        brreg.no does not expose the konkurs *date*, only the entity registration
+        date, so date-based filtering would return 0 results.  Relying on the DB
+        dedup key (country, org_number, initiated_date, trustee_email) is the
+        correct approach here.
         """
         records: List[BankruptcyRecord] = []
         page = 0
-
-        # Date range filters (ISO-8601 date, no time component)
-        fra_dato = f"{year:04d}-{month:02d}-01"
-        if month == 12:
-            til_dato = f"{year + 1:04d}-01-01"
-        else:
-            til_dato = f"{year:04d}-{month + 1:02d}-01"
 
         while True:
             params = {
                 "konkurs": "true",
                 "size": PAGE_SIZE,
                 "page": page,
-                "fraRegistreringsdatoEnhetsregisteret": fra_dato,
-                "tilRegistreringsdatoEnhetsregisteret": til_dato,
             }
             resp = self._api_get(ENHETER_URL, params=params)
             if resp is None:
@@ -320,30 +201,20 @@ class NorwayPlugin:
                     cached_keys.add(key)
                     records.append(record)
 
-            # Check pagination
             page_info = data.get("page", {})
             total_pages = page_info.get("totalPages", 1)
             if page + 1 >= total_pages:
                 break
             page += 1
 
+        logger.info(
+            "Norway: found %d new bankruptcy records for %04d-%02d",
+            len(records), year, month,
+        )
         return records
 
     # ------------------------------------------------------------------
     # Entity detail fetch
-    # ------------------------------------------------------------------
-
-    def _fetch_entity(self, orgnr: str) -> Optional[dict]:
-        """Fetch a single entity by organisasjonsnummer."""
-        url = f"{ENHETER_URL}/{orgnr}"
-        resp = self._api_get(url)
-        if resp is None:
-            return None
-        try:
-            return resp.json()
-        except Exception:
-            return None
-
     # ------------------------------------------------------------------
     # Record mapping
     # ------------------------------------------------------------------

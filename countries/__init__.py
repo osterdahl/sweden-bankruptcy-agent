@@ -43,3 +43,8 @@ def get_active_countries() -> List[CountryPlugin]:
         else:
             logger.warning(f"Country '{code}' not registered, skipping")
     return plugins
+
+
+# Auto-import all country plugins so they self-register at import time.
+# These imports must come after the registry functions are defined above.
+from countries import sweden, norway, denmark, finland  # noqa: F401, E402

@@ -13,7 +13,6 @@ Gällande konkursen för {{company_name}}
 ---
 
 ## Body
-
 Hej,
 
 Jag såg i POIT att du sköter konkursen för {{company_name}}, och jag är nyfiken på hur processen går kring deras tillgångar? Finns det en lista på sådant som ev kan köpas ut direkt eller via auktion som du kan skicka till mig, och hur ser tidslinjen ut?

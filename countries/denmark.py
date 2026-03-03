@@ -49,7 +49,7 @@ REQUEST_DELAY_S = 1.0
 CVR_API_BASE = "https://cvrapi.dk/api"
 
 STATSTIDENDE_SEARCH_URL = (
-    "https://www.telestatstidende.dk/telestatstidende/do/teleSearch/skifteretten"
+    "https://www.statstidende.dk/telestatstidende/do/teleSearch/skifteretten"
 )
 
 # DB07 (Dansk Branchekode 2007) = NACE Rev. 2 at 2-digit level.

@@ -334,6 +334,61 @@ h1 { font-weight: 700; font-size: 1.75rem; margin-bottom: 0; }
 
 hr { border-color: rgba(128,128,128,0.2) !important; margin: 1.5rem 0 !important; }
 [data-testid="stAlert"] { border-radius: 10px !important; font-size: 0.875rem !important; }
+
+/* ── Sidebar shell ── */
+[data-testid="stSidebar"] > div:first-child {
+    padding: 1.75rem 1.25rem 1.5rem;
+}
+
+/* ── Sidebar brand ── */
+.sb-brand {
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(128,128,128,0.12);
+}
+.sb-brand-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.sb-brand-sub {
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-color);
+    opacity: 0.32;
+}
+
+/* ── Sidebar filter label ── */
+.sb-label {
+    font-size: 0.63rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-color);
+    opacity: 0.35;
+    margin-bottom: 0.6rem;
+}
+
+/* ── Country pills — vertical nav list style ── */
+[data-testid="stSidebar"] [data-testid="stPills"] > div > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+}
+[data-testid="stSidebar"] [data-testid="stPills"] button {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    border-radius: 7px !important;
+    letter-spacing: 0 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -377,16 +432,26 @@ if conn is None:
     st.stop()
 
 # ---------------------------------------------------------------------------
-# Sidebar — Country filter
+# Sidebar
 # ---------------------------------------------------------------------------
 _br_has_country = _has_country_column(conn, "bankruptcy_records")
 _ol_has_country = _has_country_column(conn, "outreach_log")
 
-selected_countries = st.sidebar.multiselect(
+st.sidebar.markdown("""
+<div class="sb-brand">
+    <div class="sb-brand-name">Bankruptcy Monitor</div>
+    <div class="sb-brand-sub">Nordic</div>
+</div>
+<div class="sb-label">Countries</div>
+""", unsafe_allow_html=True)
+
+selected_countries = st.sidebar.pills(
     "Countries",
     options=list(COUNTRY_OPTIONS.keys()),
     default=list(COUNTRY_OPTIONS.keys()),
-    format_func=lambda x: f"{COUNTRY_FLAGS.get(x, '')} {COUNTRY_OPTIONS[x]}",
+    selection_mode="multi",
+    format_func=lambda x: f"{COUNTRY_FLAGS[x]}  {COUNTRY_OPTIONS[x]}",
+    label_visibility="collapsed",
 )
 
 if not selected_countries:
@@ -694,6 +759,7 @@ with tab_queue:
         _rw_ol_has_country = _has_country_column(rw_conn, "outreach_log")
         _rw_country_col = ", o.country" if _rw_ol_has_country else ""
         _rw_ol_and, _rw_ol_params = _country_filter_sql(_rw_ol_has_country, selected_countries, "o")
+        _rw_ol_and_plain, _rw_ol_params_plain = _country_filter_sql(_rw_ol_has_country, selected_countries)
 
         pending = rw_conn.execute(
             f"""SELECT o.id, o.org_number, o.trustee_email, o.company_name,
@@ -801,8 +867,8 @@ with tab_queue:
 
         # ── Re-queue dry-run section ──
         dry_run_count = rw_conn.execute(
-            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'dry-run' {_rw_ol_and}",
-            _rw_ol_params,
+            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'dry-run' {_rw_ol_and_plain}",
+            _rw_ol_params_plain,
         ).fetchone()[0]
 
         if dry_run_count > 0:
@@ -816,8 +882,8 @@ with tab_queue:
 
         # ── Send approved section ──
         approved_count = rw_conn.execute(
-            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'approved' {_rw_ol_and}",
-            _rw_ol_params,
+            f"SELECT COUNT(*) FROM outreach_log WHERE status = 'approved' {_rw_ol_and_plain}",
+            _rw_ol_params_plain,
         ).fetchone()[0]
 
         st.markdown("<hr>", unsafe_allow_html=True)
